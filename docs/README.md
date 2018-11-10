@@ -1,3 +1,0 @@
-# URaider (UnityRaider)
-
-GitHub pages
