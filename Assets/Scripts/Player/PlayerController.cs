@@ -41,7 +41,7 @@ public class PlayerController : MonoBehaviour
     public Transform waistBone;
     public Transform rightFootIK;
     public Transform leftFootIK;
-    public Transform palmLocation;
+    public Transform headBone;
     public GameObject pistolLHand;
     public GameObject pistolRHand;
     public GameObject pistolLLeg;
@@ -54,6 +54,7 @@ public class PlayerController : MonoBehaviour
     private bool isFootIK = false;
     private bool holdRotation = false;
     private bool forceWaistRotation = false;
+    private bool forceHeadLook = false;
     private float combatAngle = 0f;
     private float groundDistance = 0f;
     private float groundAngle = 0f;
@@ -75,6 +76,7 @@ public class PlayerController : MonoBehaviour
     private Weapon[] auxiliaryWeapon;
     private Transform waistTarget;
     private Quaternion waistRotation;
+    private Vector3 headLookAt;
     private Vector3 velocity;
     [HideInInspector]
     public Vector3 slopeDirection;
@@ -138,7 +140,6 @@ public class PlayerController : MonoBehaviour
             anim.speed = 1f;
         }
 
-
         CheckForGround();
 
         stateMachine.Update();
@@ -174,6 +175,15 @@ public class PlayerController : MonoBehaviour
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
         stateMachine.SendMessage(hit);
+    }
+
+    private void OnAnimatorIK()
+    {
+        if (forceHeadLook)
+        {
+            anim.SetLookAtWeight(1f);
+            anim.SetLookAtPosition(headLookAt);
+        }
     }
 
     public void DisableRagdoll()
@@ -302,7 +312,7 @@ public class PlayerController : MonoBehaviour
         return targetVector;
     }
 
-    public bool adjustingRot = false;
+    private bool adjustingRot = false;
 
     public void MoveGrounded(float speed, bool pushDown = true, float smoothing = 10f)
     {
@@ -313,30 +323,23 @@ public class PlayerController : MonoBehaviour
 
         velocity.y = 0f; // So slerp is correct when pushDown is true
 
-        AnimatorStateInfo animState = anim.GetCurrentAnimatorStateInfo(0);
-
-        bool turning = animState.IsName("IdleTurns") || animState.IsName("RunTurns");
-
         targetAngle = Vector3.SignedAngle(transform.forward, targetVector.normalized, Vector3.up);
         targetSpeed = UMath.GetHorizontalMag(targetVector);
 
-        holdRotation = Mathf.Abs(TargetAngle) > (animState.IsName("Idle") ? 80f : 170f) || turning;
-
-        anim.SetFloat("SignedTargetAngle", TargetAngle, turning ? 1000000f : 0, Time.deltaTime);
-        anim.SetFloat("TargetAngle", Mathf.Abs(TargetAngle), turning ? 1000000f : 0, Time.deltaTime);
-        anim.SetFloat("TargetSpeed", TargetSpeed);
+        anim.SetFloat("SignedTargetAngle", targetAngle);
+        anim.SetFloat("TargetAngle", Mathf.Abs(targetAngle));
+        anim.SetFloat("TargetSpeed", targetSpeed);
 
         if (UMath.GetHorizontalMag(velocity) < 0.1f)
         {
-            if (!adjustingRot && targetVector.magnitude > 0.1f && Mathf.Abs(TargetAngle) > 5f/*5*/)
+            if (targetVector.magnitude > 0.1f)
             {
-                adjustingRot = true;
-                velocity = Mathf.Abs(TargetAngle) > 80f ? targetVector : transform.forward * 3f;
+                velocity = transform.forward * 0.1f;
 
-            }
-            else if (UMath.GetHorizontalMag(targetVector) < 0.3f)
-            {
-                velocity = Vector3.zero;
+                if (!adjustingRot && Mathf.Abs(targetAngle) > 1f)
+                {
+                    adjustingRot = true;
+                }
             }
         }
         else if (Mathf.Abs(TargetAngle) > 36f)
@@ -344,26 +347,20 @@ public class PlayerController : MonoBehaviour
             adjustingRot = true;
         }
 
-        if (turning)
-            adjustingRot = false; // Stops turning code clashing with root motion
-
-        if (!turning)
+        if (adjustingRot)
         {
-            if (adjustingRot)
+            velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
+            if (Vector3.Angle(velocity, targetVector) < 1f)
             {
-                velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
-                if (Vector3.Angle(velocity, targetVector) < 5f)
-                {
-                    adjustingRot = false;
-                }
-            }
-            else
-            {
-                velocity = targetVector;
+                adjustingRot = false;
             }
         }
+        else
+        {
+            velocity = targetVector;
+        }
 
-        anim.SetFloat("Speed", UMath.GetHorizontalMag(!turning ? velocity : targetVector), 0.1f, Time.deltaTime);
+        anim.SetFloat("Speed", UMath.GetHorizontalMag(velocity), 0.1f, Time.deltaTime);
         anim.SetFloat("Right", 0f);
 
         if (pushDown)
@@ -492,7 +489,7 @@ public class PlayerController : MonoBehaviour
     public void RotateToVelocityGround(float smoothing = 0f)
     {
         // if stops Lara returning to the default rotation when idle
-        if (UMath.GetHorizontalMag(velocity) > 0.3f && !holdRotation)
+        if (!holdRotation)
         {
             Quaternion target = Quaternion.Euler(0.0f, Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg, 0.0f);
             if (smoothing == 0f)
@@ -626,6 +623,12 @@ public class PlayerController : MonoBehaviour
         set { waistRotation = value; }
     }
 
+    public Vector3 HeadLookAt
+    {
+        get { return headLookAt; }
+        set { headLookAt = value; }
+    }
+
     public Animator Anim
     {
         get { return anim; }
@@ -656,6 +659,12 @@ public class PlayerController : MonoBehaviour
     {
         get { return forceWaistRotation; }
         set { forceWaistRotation = value; }
+    }
+
+    public bool ForceHeadLook
+    {
+        get { return forceHeadLook; }
+        set { forceHeadLook = value; }
     }
 
     public float CombatAngle

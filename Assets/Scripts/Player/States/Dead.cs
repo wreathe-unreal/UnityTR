@@ -42,7 +42,7 @@ public class Dead : StateBase<PlayerController>
             player.Velocity = Vector3.Scale(hitVelocity.normalized, new Vector3(1f, -1f, 1f));
             foreach (Rigidbody rb in player.ragRigidBodies)
             {
-                rb.velocity = player.Velocity;
+                rb.AddForce(player.Velocity, ForceMode.Impulse);
             }
         }
 

@@ -10,6 +10,7 @@ public class AutoGrabbing : StateBase<PlayerController>
 
     private Vector3 grabPoint;
     private Vector3 startPosition;
+    private Quaternion targetRot;
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
 
     public override void OnEnter(PlayerController player)
@@ -17,16 +18,13 @@ public class AutoGrabbing : StateBase<PlayerController>
         player.MinimizeCollider();
 
         player.Anim.SetBool("isAutoGrabbing", true);
+        player.ForceHeadLook = true;
 
         grabPoint = new Vector3(ledgeDetector.GrabPoint.x - (player.transform.forward.x * player.grabForwardOffset),
                         ledgeDetector.GrabPoint.y - player.grabUpOffset,
                         ledgeDetector.GrabPoint.z - (player.transform.forward.z * player.grabForwardOffset));
 
-        Vector3 multiplier = new Vector3(1f, 0f, 1f);
-
-        distanceToGo = Mathf.Abs(Vector3.Distance(
-            Vector3.Scale(grabPoint, multiplier), 
-            Vector3.Scale(player.transform.position, multiplier))) - 0.01f;
+        targetRot = Quaternion.LookRotation(ledgeDetector.Direction); 
 
         startPosition = player.transform.position;
 
@@ -43,21 +41,21 @@ public class AutoGrabbing : StateBase<PlayerController>
         player.MaximizeCollider();
 
         player.Anim.SetBool("isAutoGrabbing", false);
+        player.ForceHeadLook = false;
     }
 
     public override void Update(PlayerController player)
     {
         player.ApplyGravity(player.gravity);
 
-        Vector3 multiplier = new Vector3(1f, 0f, 1f);
+        player.transform.rotation = Quaternion.Slerp(player.transform.rotation, targetRot, Time.deltaTime);
 
-        distanceTravelled = Mathf.Abs(Vector3.Distance(
-            Vector3.Scale(player.transform.position, multiplier), 
-            Vector3.Scale(startPosition, multiplier)));
+        player.HeadLookAt = ledgeDetector.GrabPoint;
 
         if (Time.time - timeTracker >= player.grabTime)
         {
             player.transform.position = grabPoint;
+            player.transform.rotation = targetRot;
 
             if (ledgeDetector.WallType == LedgeType.Free)
                 player.StateMachine.GoToState<Freeclimb>();

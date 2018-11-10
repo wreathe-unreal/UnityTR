@@ -77,7 +77,6 @@ public class Combat : StateBase<PlayerController>
             player.Anim.SetFloat("AimAngle", 
                 Vector3.SignedAngle((target.position - player.transform.position).normalized, 
                 player.transform.forward, Vector3.up));
-            Debug.Log("AimAngle " + player.Anim.GetFloat("AimAngle"));
         }
         else
         {
