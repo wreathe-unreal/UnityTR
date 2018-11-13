@@ -5,8 +5,7 @@ using UnityEngine;
 public class AutoGrabbing : StateBase<PlayerController>
 {
     private float timeTracker = 0f;
-    private float distanceToGo = 0f;
-    private float distanceTravelled = 0f;
+    private float grabTime = 0f;
 
     private Vector3 grabPoint;
     private Vector3 startPosition;
@@ -24,14 +23,18 @@ public class AutoGrabbing : StateBase<PlayerController>
                         ledgeDetector.GrabPoint.y - player.grabUpOffset,
                         ledgeDetector.GrabPoint.z - (player.transform.forward.z * player.grabForwardOffset));
 
+        Vector3 calcGrabPoint = ledgeDetector.GrabPoint - player.transform.forward * 0f
+            - 1.8f * Vector3.up;
+
         targetRot = Quaternion.LookRotation(ledgeDetector.Direction); 
 
         startPosition = player.transform.position;
 
         player.Velocity = UMath.VelocityToReachPoint(player.transform.position,
-            grabPoint,
+            calcGrabPoint,
+            4.3f,
             player.gravity,
-            player.grabTime);
+            out grabTime);
 
         timeTracker = Time.time;
     }
@@ -52,7 +55,7 @@ public class AutoGrabbing : StateBase<PlayerController>
 
         player.HeadLookAt = ledgeDetector.GrabPoint;
 
-        if (Time.time - timeTracker >= player.grabTime)
+        if (Time.time - timeTracker >= grabTime)
         {
             player.transform.position = grabPoint;
             player.transform.rotation = targetRot;

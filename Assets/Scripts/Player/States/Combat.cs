@@ -77,6 +77,7 @@ public class Combat : StateBase<PlayerController>
             player.Anim.SetFloat("AimAngle", 
                 Vector3.SignedAngle((target.position - player.transform.position).normalized, 
                 player.transform.forward, Vector3.up));
+            Debug.Log("AimAngle: " + player.Anim.GetFloat("AimAngle"));
         }
         else
         {
@@ -88,7 +89,7 @@ public class Combat : StateBase<PlayerController>
 
         player.camController.State = target == null ? CameraState.Grounded : CameraState.Combat;
 
-        player.Anim.SetBool("isFiring", Input.GetKey(player.playerInput.fireWeapon));
+        //player.Anim.SetBool("isFiring", Input.GetKey(player.playerInput.fireWeapon));
     }
 
     private void CheckForTargets(PlayerController player)

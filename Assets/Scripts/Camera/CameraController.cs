@@ -22,6 +22,8 @@ public class CameraController : MonoBehaviour
 
     private float yRot = 0.0f;
     private float xRot = 0.0f;
+    private float OldPlayerRot = 0f;
+    private float playerRot = 0f;
 
     private Transform pivot;
     private Transform lookAt;
@@ -60,21 +62,24 @@ public class CameraController : MonoBehaviour
         float x = Input.GetAxis(MouseX);
         float y = Input.GetAxis(MouseY);
 
-        if (camState == CameraState.Grounded)
-            yRot += x * rotationSpeed * Time.deltaTime;
-        else
-            yRot = Quaternion.LookRotation((lookAt.position - target.position).normalized, Vector3.up).eulerAngles.y;
+        if (x != 0f)
+        {
+            if (camState == CameraState.Grounded)
+                yRot += x * rotationSpeed * Time.deltaTime;
+            else
+                yRot = Quaternion.LookRotation((lookAt.position - target.position).normalized, Vector3.up).eulerAngles.y;
+        }
+
+        if (LAUTurning && camState == CameraState.Grounded
+            && Mathf.Abs(x) == 0f
+            && target.GetComponent<PlayerController>().Anim.GetCurrentAnimatorStateInfo(0).IsName("RunWalk"))
+            DoExtraRotation();
 
         xRot -= y * rotationSpeed * Time.deltaTime; // Negative so mouse up = cam down
         xRot = Mathf.Clamp(xRot, yMin, yMax);
 
-        if (LAUTurning && camState == CameraState.Grounded 
-            && Mathf.Abs(x) < 0.3f
-            && target.GetComponent<PlayerController>().Anim.GetCurrentAnimatorStateInfo(0).IsName("RunWalk"))
-            DoExtraRotation();
-
-        Quaternion targetRot = forceDirection != Vector3.zero ? 
-            Quaternion.LookRotation(forceDirection) 
+        Quaternion targetRot = forceDirection != Vector3.zero ?
+            Quaternion.LookRotation(forceDirection)
             : Quaternion.Euler(xRot, yRot, 0.0f);
 
         if (rotationSmoothing != 0f)

@@ -39,8 +39,6 @@ public class PlayerController : MonoBehaviour
     [Header("References")]
     public CameraController camController;
     public Transform waistBone;
-    public Transform rightFootIK;
-    public Transform leftFootIK;
     public Transform headBone;
     public GameObject pistolLHand;
     public GameObject pistolRHand;
@@ -50,7 +48,6 @@ public class PlayerController : MonoBehaviour
     public Rigidbody[] ragRigidBodies;
 
     private bool isGrounded = true;
-    private bool isSliding = false;
     private bool isFootIK = false;
     private bool holdRotation = false;
     private bool forceWaistRotation = false;
@@ -299,25 +296,27 @@ public class PlayerController : MonoBehaviour
 
     public Vector3 RawTargetVector(float speed = 1f)
     {
-        Vector3 camForward = Vector3.Scale(cam.forward, new Vector3(1, 0, 1)).normalized;
-        Vector3 camRight = cam.right;
+        Vector3 moveDirection = new Vector3(Input.GetAxisRaw(playerInput.horizontalAxis), 0f, 
+            Input.GetAxisRaw(playerInput.verticalAxis));
 
-        Vector3 targetVector = camForward * Input.GetAxisRaw(playerInput.verticalAxis)
-            + camRight * Input.GetAxisRaw(playerInput.horizontalAxis);
-        if (targetVector.magnitude > 1f)
-            targetVector.Normalize();
-        targetVector.y = 0f;
-        targetVector *= speed;
+        // Make movement relative to camera
+        moveDirection = Quaternion.Euler(0, cam.eulerAngles.y, 0) * moveDirection;
 
-        return targetVector;
+        if (moveDirection.magnitude > 1f)
+            moveDirection.Normalize();  // Stops running too fast
+
+        moveDirection *= speed;
+
+        return moveDirection;
     }
 
     private bool adjustingRot = false;
 
-    public void MoveGrounded(float speed, bool pushDown = true, float smoothing = 10f)
+    public void MoveGrounded(float speed, bool pushDown = true, float smoothing = 7f)
     {
         Vector3 targetVector = RawTargetVector(speed);
 
+        // Stops small annoying movements
         if (targetVector.magnitude < 0.3f)
             targetVector = Vector3.zero;
 
@@ -349,10 +348,14 @@ public class PlayerController : MonoBehaviour
 
         if (adjustingRot)
         {
-            velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
             if (Vector3.Angle(velocity, targetVector) < 1f)
             {
                 adjustingRot = false;
+                velocity = targetVector;
+            }
+            else
+            {
+                velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
             }
         }
         else
@@ -360,14 +363,14 @@ public class PlayerController : MonoBehaviour
             velocity = targetVector;
         }
 
-        anim.SetFloat("Speed", UMath.GetHorizontalMag(velocity), 0.1f, Time.deltaTime);
-        anim.SetFloat("Right", 0f);
+        float actualSpeed = UMath.GetHorizontalMag(velocity);
+        anim.SetFloat("Speed", actualSpeed, 0.15f, Time.deltaTime);
 
         if (pushDown)
             velocity.y = -gravity;  // so charControl is grounded consistently
     }
 
-    public void MoveStrafeGround(float speed, bool pushDown = true, float smoothing = 10f)
+    public void MoveStrafeGround(float speed, bool pushDown = true, float smoothing = 7f)
     {
         Vector3 targetVector = RawTargetVector(speed);
 

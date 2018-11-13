@@ -8,6 +8,7 @@ public class Locomotion : StateBase<PlayerController>
     private bool waitingBool = false;  // avoids early reset of root mtn
     private bool isTransitioning = false;
     private bool isStairs = false;
+    private float speed = 0f;
 
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
 
@@ -100,6 +101,8 @@ public class Locomotion : StateBase<PlayerController>
 
         float moveSpeed = Input.GetKey(player.playerInput.walk) ? player.walkSpeed
             : player.runSpeed;
+
+        speed = Mathf.Lerp(speed, moveSpeed, Time.deltaTime * 10f);
 
         player.MoveGrounded(moveSpeed);
         if (player.TargetSpeed > 1f)

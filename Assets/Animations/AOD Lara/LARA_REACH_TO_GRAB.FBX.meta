@@ -171,11 +171,11 @@ ModelImporter:
     - serializedVersion: 16
       name: LARA_REACH_TO_GRAB
       takeName: LARA_REACH_TO_GRAB
-      firstFrame: 0
+      firstFrame: 1
       lastFrame: 30
       wrapMode: 0
       orientationOffsetY: 0
-      level: 0.52
+      level: 0.14
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
@@ -1600,7 +1600,6 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     rootMotionBoneName: 
-    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
     hasTranslationDoF: 0
     hasExtraRoot: 1
     skeletonHasParents: 1

@@ -12,11 +12,29 @@ public static class UMath
     public static Vector3 VelocityToReachPoint(Vector3 start, Vector3 end, float gravity, float time)
     {
         Vector3 relative = end - start;
-        Vector3 dir = relative.normalized;
+        Vector3 dir = relative;
+        dir.y = 0f;
+        dir.Normalize();
         float xzResultant = Mathf.Sqrt(Mathf.Pow(relative.z, 2) + Mathf.Pow(relative.x, 2));
         float xz = xzResultant / time;  // u = s/t
         float y = (relative.y - (0.5f * (-gravity) * Mathf.Pow(time, 2))) / time;  // u = (s - 0.5at^2) / t
         return new Vector3(xz * dir.x, y, xz * dir.z);
+    }
+
+    public static Vector3 VelocityToReachPoint(Vector3 start, Vector3 end, float horVel, float gravity, out float time)
+    {
+        Vector3 relative = end - start;
+        Vector3 dir = relative;
+        dir.y = 0f;
+        dir.Normalize();
+
+        float horDist = GetHorizontalMag(relative);
+
+        time = GetHorizontalMag(relative) / horVel;
+
+        float u = (relative.y - (0.5f * (-gravity) * Mathf.Pow(time, 2))) / time;
+
+        return (Vector3.up * u) + (horVel * dir);
     }
 
     public static float PredictDisplacement(float speed, float time, float accel = 0)
