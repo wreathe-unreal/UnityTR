@@ -10,17 +10,15 @@ using UnityEngine.Networking;
 public class PlayerController : MonoBehaviour
 {
     public bool autoLedgeTarget = true;
-    public float grabTime = 0.7f;
     [Header("Movement Speeds")]
-    public float sprintSpeed = 4f;
-    public float runSpeed = 3.36f;
+    public float runSpeed = 3.49f;
     public float walkSpeed = 1.44f;
     public float stairSpeed = 2f;
     public float swimSpeed = 2f;
     public float treadSpeed = 1.2f;
-    public float slideSpeed = 2f;
+    public float slideSpeed = 5f;
     [Header("Physics")]
-    public float gravity = 9.81f;
+    public float gravity = 9.8f;
     public float deathVelocity = 12f;
     [Header("Jump Speeds")]
     public float jumpYVel = 5f;
@@ -32,9 +30,6 @@ public class PlayerController : MonoBehaviour
     public float grabUpOffset = 1.56f;
     public float hangForwardOffset = 0.11f;
     public float hangUpOffset = 1.975f;
-    [Header("Axis Names")]
-    public string right = "Horizontal";
-    public string forward = "Vertical";
 
     [Header("References")]
     public CameraController camController;
@@ -77,8 +72,6 @@ public class PlayerController : MonoBehaviour
     private Vector3 velocity;
     [HideInInspector]
     public Vector3 slopeDirection;
-    [HideInInspector]
-    public bool useRootMotion = true;
     private RaycastHit groundHit;
 
     private void Awake()

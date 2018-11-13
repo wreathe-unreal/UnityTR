@@ -15,8 +15,9 @@ public class Jumping : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
-        player.Anim.applyRootMotion = false;
         player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
+        if (player.Velocity.magnitude > 1f)
+            player.Anim.applyRootMotion = false;
         player.Anim.SetBool("isJumping", true);
 
         if (player.autoLedgeTarget)
@@ -47,8 +48,7 @@ public class Jumping : StateBase<PlayerController>
             isGrabbing = true;
         }
 
-        bool isRunJump = animState.IsName("RunJump") || animState.IsName("RunJumpM")
-            || animState.IsName("SprintJump") || animState.IsName("Dive");
+        bool isRunJump = animState.IsName("RunJump") || animState.IsName("RunJumpM");
         bool isStandJump = animState.IsName("StandJump") || transInfo.IsName("Still_Compress_Forward -> StandJump");
         bool isJumpUp = animState.IsName("JumpUp");
 

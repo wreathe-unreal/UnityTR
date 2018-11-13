@@ -14,6 +14,7 @@ public class Dead : StateBase<PlayerController>
     {
         player.Anim.SetBool("isDead", true);
         player.Anim.applyRootMotion = true;
+        player.DisableCharControl();
         hitVelocity = player.Velocity;
         player.Velocity = Vector3.zero;
         player.camController.PivotOnTarget();
@@ -34,12 +35,12 @@ public class Dead : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (Time.time - timeCounter >= 0.15f && !ragged)
+        if (Time.time - timeCounter >= 0.12f && !ragged)
         {
             ragged = true;
             player.Anim.enabled = false;
             player.EnableRagdoll();
-            player.Velocity = Vector3.Scale(hitVelocity.normalized, new Vector3(1f, -1f, 1f));
+            player.Velocity = -hitVelocity;
             foreach (Rigidbody rb in player.ragRigidBodies)
             {
                 rb.AddForce(player.Velocity, ForceMode.Impulse);

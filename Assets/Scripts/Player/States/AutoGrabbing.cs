@@ -30,9 +30,11 @@ public class AutoGrabbing : StateBase<PlayerController>
 
         startPosition = player.transform.position;
 
+        float curSpeed = UMath.GetHorizontalMag(player.Velocity);
+
         player.Velocity = UMath.VelocityToReachPoint(player.transform.position,
             calcGrabPoint,
-            4.3f,
+            UMath.GetHorizontalMag(player.Velocity) > 1f ? curSpeed + player.jumpZBoost : 3f,
             player.gravity,
             out grabTime);
 
@@ -50,8 +52,6 @@ public class AutoGrabbing : StateBase<PlayerController>
     public override void Update(PlayerController player)
     {
         player.ApplyGravity(player.gravity);
-
-        player.transform.rotation = Quaternion.Slerp(player.transform.rotation, targetRot, Time.deltaTime);
 
         player.HeadLookAt = ledgeDetector.GrabPoint;
 
