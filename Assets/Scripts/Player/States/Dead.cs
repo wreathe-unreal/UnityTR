@@ -18,8 +18,6 @@ public class Dead : StateBase<PlayerController>
         hitVelocity = player.Velocity;
         player.Velocity = Vector3.zero;
         player.camController.PivotOnTarget();
-        //player.Anim.enabled = false;
-        //player.EnableRagdoll();
         timeCounter = Time.time;
         foreach (Rigidbody rb in player.ragRigidBodies)
         {

@@ -64,14 +64,24 @@ public class Locomotion : StateBase<PlayerController>
             return;
         }
 
-        if (!player.Grounded && player.GroundDistance > player.charControl.stepOffset && !isRootMotion)
+        if (!player.Grounded && player.Ground.Distance > player.charControl.stepOffset && !isRootMotion)
         {
             player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
             player.StateMachine.GoToState<InAir>();
             return;
         }
+        else if (player.Ground.Tag == "Slope" && !isRootMotion)
+        {
+            player.StateMachine.GoToState<Sliding>();
+            return;
+        }
+        else if (Input.GetKeyDown(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
+        {
+            player.StateMachine.GoToState<Combat>();
+            return;
+        }
 
-        if (isStairs = (player.GroundDistance < 1f && player.GroundHit.collider.CompareTag("Stairs")))
+        if (isStairs = (player.Ground.Distance < 1f && player.Ground.Tag == "Stairs"))
         {
             player.Anim.SetBool("isStairs", true);
             RaycastHit hit;
@@ -86,17 +96,6 @@ public class Locomotion : StateBase<PlayerController>
         {
             player.Anim.SetBool("isStairs", false);
             player.Anim.SetFloat("Stairs", 0f, 0.1f, Time.deltaTime);
-        }
-
-        if (player.GroundAngle > player.charControl.slopeLimit && !isRootMotion)
-        {
-            player.StateMachine.GoToState<Sliding>();
-            return;
-        }
-        else if (Input.GetKeyDown(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
-        {
-            player.StateMachine.GoToState<Combat>();
-            return;
         }
 
         float moveSpeed = Input.GetKey(player.playerInput.walk) ? player.walkSpeed

@@ -37,6 +37,7 @@ public class HorPole : StateBase<PlayerController>
 
         if (Input.GetButtonDown("Crouch"))
         {
+            player.Anim.SetTrigger("LetGo");
             player.Velocity = Vector3.zero;
             player.StateMachine.GoToState<InAir>();
             return;

@@ -36,9 +36,10 @@ public class Drainpipe : StateBase<PlayerController>
             return;
         }
 
-        if (Input.GetKeyDown(player.playerInput.crouch) && animState.IsName("DPipeIdle"))
+        if (Input.GetKeyDown(player.playerInput.crouch))
         {
             //player.transform.position = player.transform.position - player.transform.forward * 0.2f;
+            player.Anim.SetTrigger("LetGo");
             player.Velocity = Vector3.zero;
             player.StateMachine.GoToState<InAir>();
             return;

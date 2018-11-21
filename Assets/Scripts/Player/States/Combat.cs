@@ -81,7 +81,9 @@ public class Combat : StateBase<PlayerController>
         }
         else
         {
-            player.Anim.SetFloat("AimAngle", player.CombatAngle);
+            player.Anim.SetFloat("AimAngle", 
+                Vector3.SignedAngle((player.Cam.forward),
+                player.transform.forward, Vector3.up));
         }
 
         player.WaistRotation = player.transform.rotation;

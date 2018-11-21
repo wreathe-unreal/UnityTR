@@ -12,6 +12,8 @@ public class InAir : StateBase<PlayerController>
         player.Anim.applyRootMotion = false;
         haltUpdate = false;
         screamed = false;
+
+        player.Anim.SetBool("isAir", true);
     }
 
     public override void OnExit(PlayerController player)
@@ -21,6 +23,7 @@ public class InAir : StateBase<PlayerController>
         if (player.Velocity.y < -10f && player.Grounded)
             player.Stats.Health += (int)player.Velocity.y;
 
+        player.Anim.SetBool("isAir", false);
         player.Anim.SetBool("isJumping", false);
         player.Anim.SetBool("isGrabbing", false);
         player.Anim.SetBool("isDive", false);
@@ -31,7 +34,7 @@ public class InAir : StateBase<PlayerController>
         if (haltUpdate)
             return;
 
-        if (player.Velocity.y < -player.deathVelocity && !screamed)
+        if (player.Velocity.y < -16f && !screamed)
         {
             player.SFX.PlayScreamSound();
             screamed = true;
@@ -47,23 +50,21 @@ public class InAir : StateBase<PlayerController>
 
         if (player.Grounded)
         {
-            if (player.Velocity.y < -player.deathVelocity)
+            if (player.Velocity.y < -16f)
             {
                 player.GetComponent<AudioSource>().Stop();
                 player.SFX.PlayHitGroundSound();
                 player.StateMachine.GoToState<Dead>();
             }
-            else if (UMath.GroundAngle(player.GroundHit.normal) <= player.charControl.slopeLimit)
+            else if (player.Ground.Angle <= player.charControl.slopeLimit)
             {
+                player.Anim.SetTrigger("Land");
+
                 // Stops player moving forward on landing
                 if (Input.GetAxisRaw(player.playerInput.verticalAxis) < 0.1f && Input.GetAxisRaw(player.playerInput.horizontalAxis) < 0.1f)
                     player.Velocity = Vector3.down * player.gravity;
                 
                 player.StateMachine.GoToState<Locomotion>();
-            }
-            else
-            {
-                player.StateMachine.GoToState<Sliding>();
             }
             return;
                 
@@ -72,6 +73,10 @@ public class InAir : StateBase<PlayerController>
         {
             player.StateMachine.GoToState<Grabbing>();
             return;
+        }
+        else if (player.Ground.Tag == "Slope")
+        {
+            player.StateMachine.GoToState<Sliding>();
         }
     }
 }

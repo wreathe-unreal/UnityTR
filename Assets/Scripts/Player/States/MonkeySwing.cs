@@ -24,6 +24,7 @@ public class MonkeySwing : StateBase<PlayerController>
     {
         if (Input.GetButtonDown("Crouch"))
         {
+            player.Anim.SetTrigger("LetGo");
             player.StateMachine.GoToState<InAir>();
             return;
         }

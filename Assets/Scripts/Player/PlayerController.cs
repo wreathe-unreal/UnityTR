@@ -19,10 +19,12 @@ public class PlayerController : MonoBehaviour
     public float slideSpeed = 5f;
     [Header("Physics")]
     public float gravity = 9.8f;
-    public float deathVelocity = 12f;
-    [Header("Jump Speeds")]
-    public float jumpYVel = 5f;
-    public float jumpZBoost = 0.8f;
+    public float damageHeight = 6f;
+    public float deathHeight = 12f;
+    [Header("Jump Settings")]
+    public float jumpHeight = 1.2f;
+    public float jumpDistance = 4.2f;
+    public float standJumpDistance = 3f;
     [Header("IK Settings")]
     public float footYOffset = 0.1f;
     [Header("Offsets")]
@@ -47,9 +49,10 @@ public class PlayerController : MonoBehaviour
     private bool holdRotation = false;
     private bool forceWaistRotation = false;
     private bool forceHeadLook = false;
+    private float jumpYVel = 0f;
+    private float jumpZVel = 0f;
+    private float standJumpZVel = 0f;
     private float combatAngle = 0f;
-    private float groundDistance = 0f;
-    private float groundAngle = 0f;
     [HideInInspector]
     public bool isMovingAuto = false;
     private float targetAngle = 0f;
@@ -70,13 +73,19 @@ public class PlayerController : MonoBehaviour
     private Quaternion waistRotation;
     private Vector3 headLookAt;
     private Vector3 velocity;
-    [HideInInspector]
-    public Vector3 slopeDirection;
-    private RaycastHit groundHit;
+    private GroundInfo groundInfo;
 
     private void Awake()
     {
         DisableRagdoll();
+
+        // Calc jump speeds - v^2 = u^2 + 2as
+        jumpYVel = Mathf.Sqrt(2f * jumpHeight * gravity);
+
+        float timeInAir = (2 * jumpYVel) / gravity;
+
+        jumpZVel = jumpDistance / timeInAir;  // u = s/t
+        standJumpZVel = standJumpDistance / timeInAir;
     }
 
     private void Start()
@@ -136,35 +145,91 @@ public class PlayerController : MonoBehaviour
 
         UpdateAnimator();
 
+        SlideOffSlopeLimit();
+
         if (charControl.enabled)
             charControl.Move((anim.applyRootMotion ? Vector3.Scale(velocity, Vector3.up) : velocity) * Time.deltaTime);
     }
 
+    private void SlideOffSlopeLimit()
+    {
+        if (groundInfo.Angle > charControl.slopeLimit && groundInfo.Tag != "Slope")
+        {
+            // Test if we are on sharp edge or not
+            RaycastHit testHit;
+            Vector3 castTestDir = -new Vector3(groundInfo.Normal.x, 0f, groundInfo.Normal.z).normalized;
+
+            if (Physics.Raycast(transform.position, castTestDir, out testHit, charControl.radius + 0.1f))
+            {
+                if (Vector3.Angle(Vector3.up, testHit.normal) >= 90f)
+                    return;
+            }
+
+            Vector3 slopeRight = Vector3.Cross(Vector3.up, groundInfo.Normal).normalized;
+            Vector3 slopeDirection = Vector3.Cross(slopeRight, groundInfo.Normal).normalized;
+
+            Quaternion rotater = Quaternion.FromToRotation(velocity.normalized, slopeDirection);
+
+            velocity = rotater * velocity;
+            velocity.y = -gravity;
+        }
+    }
+
     private void CheckForGround()
     {
-        // velY condition helps stop accidental grounding (like when jumping)
-        isGrounded = charControl.isGrounded && velocity.y <= 0.0f;
-        anim.SetBool("isGrounded", isGrounded);
+        isGrounded = false;
 
-        groundDistance = 2f;
-        groundAngle = 0f;
+        groundInfo.Distance = 2f;
+        groundInfo.Angle = 0f;
+        groundInfo.Tag = "";
+        groundInfo.Normal = Vector3.up;
 
-        Vector3 centerStart = transform.position + Vector3.up * 0.2f;
+        RaycastHit groundHit;
 
-        if ((Physics.Raycast(centerStart, Vector3.down, out groundHit, GroundDistance)
-            && !groundHit.collider.CompareTag("Water")))
+        Vector3 sphereStart = transform.position + Vector3.up * charControl.radius;
+
+        if (Physics.SphereCast(sphereStart, charControl.radius, Vector3.down, out groundHit, charControl.skinWidth + 0.1f))
         {
-            groundDistance = transform.position.y - groundHit.point.y;
-            groundAngle = UMath.GroundAngle(groundHit.normal);
+            isGrounded = true;
+            groundInfo.Distance = transform.position.y - groundHit.point.y;
+            groundInfo.Angle = UMath.GroundAngle(groundHit.normal);
+            groundInfo.Tag = groundHit.collider.tag;
+            groundInfo.Normal = groundHit.normal;
         }
 
-        anim.SetFloat("groundDistance", GroundDistance);
-        anim.SetFloat("groundAngle", GroundAngle);
+        if (isGrounded)
+        {
+            float castDist = charControl.stepOffset + charControl.skinWidth + charControl.radius;
+
+            Vector3 centerStart = transform.position 
+                + Vector3.up * charControl.radius 
+                + transform.forward * charControl.radius;
+
+            centerStart = transform.position
+            + Vector3.up * charControl.radius;
+
+            Debug.DrawRay(centerStart, Vector3.down * castDist, Color.white);
+            if (Physics.Raycast(centerStart, Vector3.down, out groundHit, castDist)
+                && !groundHit.collider.CompareTag("Water"))
+            {
+                groundInfo.Distance = transform.position.y - groundHit.point.y;
+                groundInfo.Angle = UMath.GroundAngle(groundHit.normal);
+                groundInfo.Tag = groundHit.collider.tag;
+                groundInfo.Normal = groundHit.normal;
+            }
+
+            if (groundInfo.Angle > charControl.slopeLimit)
+                isGrounded = false;
+        }
+
+        anim.SetBool("isGrounded", isGrounded);
+        anim.SetFloat("groundDistance", groundInfo.Distance);
+        anim.SetFloat("groundAngle", groundInfo.Angle);
     }
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
-        stateMachine.SendMessage(hit);
+        //stateMachine.SendMessage(hit);
     }
 
     private void OnAnimatorIK()
@@ -289,11 +354,12 @@ public class PlayerController : MonoBehaviour
 
     public Vector3 RawTargetVector(float speed = 1f)
     {
-        Vector3 moveDirection = new Vector3(Input.GetAxisRaw(playerInput.horizontalAxis), 0f, 
+        // Raw input relative to camera
+        Vector3 directInput = new Vector3(Input.GetAxisRaw(playerInput.horizontalAxis), 0f,
             Input.GetAxisRaw(playerInput.verticalAxis));
 
-        // Make movement relative to camera
-        moveDirection = Quaternion.Euler(0, cam.eulerAngles.y, 0) * moveDirection;
+        // Move direction in world space
+        Vector3 moveDirection = Quaternion.Euler(0, cam.eulerAngles.y, 0) * directInput;
 
         if (moveDirection.magnitude > 1f)
             moveDirection.Normalize();  // Stops running too fast
@@ -305,7 +371,7 @@ public class PlayerController : MonoBehaviour
 
     private bool adjustingRot = false;
 
-    public void MoveGrounded(float speed, bool pushDown = true, float smoothing = 7f)
+    public void MoveGrounded(float speed, bool pushDown = true, float smoothing = 8f)
     {
         Vector3 targetVector = RawTargetVector(speed);
 
@@ -317,6 +383,9 @@ public class PlayerController : MonoBehaviour
 
         targetAngle = Vector3.SignedAngle(transform.forward, targetVector.normalized, Vector3.up);
         targetSpeed = UMath.GetHorizontalMag(targetVector);
+
+        if (targetSpeed > 1f)
+            anim.SetFloat("FootTime", anim.GetFloat("AnimTime"));
 
         anim.SetFloat("SignedTargetAngle", targetAngle);
         anim.SetFloat("TargetAngle", Mathf.Abs(targetAngle));
@@ -334,7 +403,7 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
-        else if (Mathf.Abs(TargetAngle) > 36f)
+        else if (Mathf.Abs(targetAngle) > 36f)
         {
             adjustingRot = true;
         }
@@ -379,7 +448,6 @@ public class PlayerController : MonoBehaviour
 
         targetAngle = Vector3.SignedAngle(transform.forward, targetVector.normalized, Vector3.up);
         combatAngle = Vector3.SignedAngle(camForward, velocity.normalized, Vector3.up);
-        Debug.Log("CombAngle: " + combatAngle);
         targetSpeed = UMath.GetHorizontalMag(targetVector);
 
         anim.SetFloat("SignedTargetAngle", targetAngle);
@@ -592,6 +660,8 @@ public class PlayerController : MonoBehaviour
         charControl.enabled = true;
     }
 
+    #region Properties
+
     public StateMachine<PlayerController> StateMachine
     {
         get { return stateMachine; }
@@ -663,19 +733,29 @@ public class PlayerController : MonoBehaviour
         set { forceHeadLook = value; }
     }
 
+    public float JumpYVel
+    {
+        get { return jumpYVel; }
+    }
+
+    public float JumpZVel
+    {
+        get { return jumpZVel; }
+    }
+
+    public float StandJumpZVel
+    {
+        get { return standJumpZVel; }
+    }
+
     public float CombatAngle
     {
         get { return combatAngle; }
     }
 
-    public float GroundDistance
+    public GroundInfo Ground
     {
-        get { return groundDistance; }
-    }
-
-    public float GroundAngle
-    {
-        get { return groundAngle;  }
+        get { return groundInfo; }
     }
 
     public float TargetAngle
@@ -696,10 +776,5 @@ public class PlayerController : MonoBehaviour
             velocity = value;
         }
     }
-
-    public RaycastHit GroundHit
-    {
-        get { return groundHit; }
-    }
-
+    #endregion
 }

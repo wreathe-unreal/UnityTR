@@ -16,15 +16,7 @@ public class Jumping : StateBase<PlayerController>
     public override void OnEnter(PlayerController player)
     {
         player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
-        if (player.Velocity.magnitude > 1f)
-            player.Anim.applyRootMotion = false;
         player.Anim.SetBool("isJumping", true);
-
-        if (player.autoLedgeTarget)
-        {
-            ledgesDetected = ledgeDetector.FindLedgeJump(player.transform.position,
-                player.transform.forward, 5.6f, 3.4f);
-        }
     }
 
     public override void OnExit(PlayerController player)
@@ -57,35 +49,49 @@ public class Jumping : StateBase<PlayerController>
             player.Anim.applyRootMotion = false;
             float curSpeed = UMath.GetHorizontalMag(player.Velocity);
 
+            float zVel = isRunJump ? player.JumpZVel
+                    : isStandJump ? player.StandJumpZVel
+                    : 0.1f;
+            float yVel = player.JumpYVel;
+
+            if (player.RawTargetVector().magnitude > 0.5f && isStandJump)
+            {
+                Quaternion rotationTarget = Quaternion.LookRotation(player.RawTargetVector(), Vector3.up);
+                player.transform.rotation = rotationTarget;
+            }
+
+            if (player.autoLedgeTarget)
+            {
+                ledgesDetected = ledgeDetector.FindLedgeJump(player.transform.position,
+                    player.transform.forward, 6.2f, 3.2f);
+            }
+
             if (ledgesDetected)
             {
-                grabType = ledgeDetector.GetGrabType(player.transform.position, player.transform.forward,
-                player.jumpZBoost, player.jumpYVel, -player.gravity);
+                // These are for checking if Lara will already make it over the grab point
+                Vector3 relative = ledgeDetector.GrabPoint - player.transform.position;
+                float displace = UMath.GetHorizontalMag(relative);
+                float timeAtLedge = UMath.TimeAtHorizontalPoint(zVel, displace);
+                float vertPos = UMath.PredictDisplacement(yVel, timeAtLedge, -player.gravity);
 
-                if (grabType == GrabType.Hand || ledgeDetector.WallType == LedgeType.Free)
+                if (vertPos <= relative.y - 0.8f) // Distance is great, do auto-grab
                 {
                     player.StateMachine.GoToState<AutoGrabbing>();
                     return;
                 }
-                else
+                else if (vertPos <= relative.y) // she hits it around the hip just adjust velocity
                 {
-                    ledgesDetected = false;
+                    float time;
+                    Vector3 adjustedVel = UMath.VelocityToReachPoint(player.transform.position,
+                        ledgeDetector.GrabPoint, zVel, player.gravity, out time);
+                    yVel = adjustedVel.y;
                 }
+
+                ledgesDetected = false;
             }
 
             if (!ledgesDetected)  // can change in previous if - so NO else if
             {
-                float zVel = isRunJump ? curSpeed + player.jumpZBoost
-                    : isStandJump ? 3f
-                    : 0.1f;
-                float yVel = player.jumpYVel;
-
-                if (player.RawTargetVector().magnitude > 0.5f && isStandJump)
-                {
-                    Quaternion rotationTarget = Quaternion.LookRotation(player.RawTargetVector(), Vector3.up);
-                    player.transform.rotation = rotationTarget;
-                }
-
                 player.Velocity = player.transform.forward * zVel
                     + Vector3.up * yVel;
             }

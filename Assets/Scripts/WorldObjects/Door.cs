@@ -20,18 +20,24 @@ public class Door : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        
+    }
+
     private IEnumerator OpenDoor(PlayerController player)
     {
-        player.MoveWait(transform.position + transform.forward * 1f - transform.right * 0.34f, Quaternion.LookRotation(transform.right),
-            0.4f, 16f);
+        player.MoveWait(transform.position - transform.right * 1f - transform.forward * 0.4f, Quaternion.LookRotation(transform.forward),
+            7f, 16f);
+
+        player.Anim.SetTrigger("PullDoorLeft");
+        GetComponent<Animator>().Play("PullOnLeft");
 
         while (player.isMovingAuto)
         {
             yield return null;
         }
 
-        player.Anim.SetTrigger("PullDoorLeft");
-        GetComponent<Animator>().Play("PullOnLeft");
         player.Anim.applyRootMotion = true;
 
         AnimatorStateInfo stateInfo = player.Anim.GetCurrentAnimatorStateInfo(0);
@@ -39,7 +45,7 @@ public class Door : MonoBehaviour
         {
             stateInfo = player.Anim.GetCurrentAnimatorStateInfo(0);
             yield return null;
-        } while (stateInfo.IsName("Locomotion"));
+        } while (!stateInfo.IsName("Locomotion"));
 
         player.Anim.applyRootMotion = false;
         GetComponent<BoxCollider>().enabled = false;

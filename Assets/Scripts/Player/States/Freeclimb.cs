@@ -65,13 +65,13 @@ class Freeclimb : StateBase<PlayerController>
             return;
         }
 
-        if (Input.GetKeyDown(player.playerInput.crouch) && animState.IsName("HangLoop"))
+        if (Input.GetKeyDown(player.playerInput.crouch))
         {
+            player.Anim.SetTrigger("LetGo");
             player.StateMachine.GoToState<InAir>();
             return;
         }
 
-        RaycastHit hitTop;
         Vector3 slantCheckStart = player.transform.position + 1.5f * Vector3.up;
         Vector3 flatCheckStart = player.transform.position + 2f * Vector3.up - player.transform.forward * 0.2f;
         if (vertical > 0.1f && ledgeDetector.FindLedgeAtPoint(player.transform.position + Vector3.up * 1.5f,
@@ -82,34 +82,8 @@ class Freeclimb : StateBase<PlayerController>
             isClimbingUp = true;
             player.Anim.SetBool("isClimbingUp", true);
         }
-        else if (!isSlantClimb && Physics.Raycast(slantCheckStart, Vector3.up, out hitTop, 0.42f))
-        {
-            isSlantClimb = true;
-            isTransition = true;
-            player.Anim.applyRootMotion = false;
-            player.Anim.SetTrigger("SlantClimb");
-            player.transform.position = new Vector3(player.transform.position.x,
-                hitTop.point.y - 1.7f,
-                player.transform.position.z);
-            return;
-        }
-        else if (isSlantClimb && Physics.Raycast(flatCheckStart, player.transform.forward, out hitTop, 0.205f))
-        {
-            if (hitTop.normal.y == 0f)
-            {
-                isSlantClimb = false;
-                isTransition = true;
-                player.Anim.applyRootMotion = false;
-                player.Anim.SetTrigger("SlantClimb");
-                /*player.transform.position = new Vector3(hitTop.point.x,
-                    player.transform.position.y,
-                    hitTop.point.z);*/
-                return;
-            }
-            
-        }
 
-        if (player.GroundDistance <= 0.6f)
+        if (player.Ground.Distance <= 1f)
             vertical = Mathf.Clamp01(vertical);
 
         if (Physics.Raycast(player.transform.position, -player.transform.right, 1f))
@@ -132,21 +106,6 @@ class Freeclimb : StateBase<PlayerController>
 
             player.transform.position = newPos;
             player.transform.rotation = Quaternion.LookRotation(-hit.normal, Vector3.up);
-        }
-
-        if (player.GroundDistance <= 1f)
-        {
-            /*if (!isGettingOff)
-            {
-                player.Anim.SetBool("isDismounting", true);
-                //player.Anim.applyRootMotion = false;
-                isGettingOff = true;
-            }
-            else if (animState.IsName("Locomotion"))
-                player.StateMachine.GoToState<Locomotion>();
-            
-            return;*/
-
         }
     }
 }

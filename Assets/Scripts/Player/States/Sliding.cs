@@ -19,31 +19,37 @@ public class Sliding : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (Input.GetButtonDown("Jump"))
+        Debug.Log("in slide");
+
+        if (Input.GetKeyDown(player.playerInput.jump))
         {
             player.RotateToVelocityGround(); // Stops player doing side jumps
             player.StateMachine.GoToState<Jumping>();
             return;
         }
-        else if (!player.Grounded)
+        else if (player.Ground.Tag != "Slope")
         {
-            player.Velocity.Scale(new Vector3(1f, 0f, 1f));
-            player.StateMachine.GoToState<InAir>();
-            return;
-        }
-        else if (player.GroundAngle < player.charControl.slopeLimit)
-        {
-            player.StateMachine.GoToState<Locomotion>();
+            if (player.Grounded)
+            {
+                player.StateMachine.GoToState<Locomotion>();
+            }
+            else
+            {
+                player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
+                player.StateMachine.GoToState<InAir>();
+            }
             return;
         }
 
-        Vector3 slopeRight = Vector3.Cross(Vector3.up, player.GroundHit.normal);
-        Vector3 slopeDirection = Vector3.Cross(slopeRight, player.GroundHit.normal).normalized;
+        Vector3 slopeRight = Vector3.Cross(Vector3.up, player.Ground.Normal);
+        Vector3 slopeDirection = Vector3.Cross(slopeRight, player.Ground.Normal).normalized;
 
         player.Velocity = slopeDirection * player.slideSpeed;
         player.Velocity.Scale(new Vector3(1f, 0f, 1f));
         player.Velocity += Vector3.down * player.gravity;
 
-        player.RotateToVelocityGround(10f);
+        Debug.Log(player.Velocity);
+
+        player.RotateToVelocityGround(14f);
     }
 }

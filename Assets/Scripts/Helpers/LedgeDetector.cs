@@ -22,21 +22,24 @@ public class LedgeDetector
 
     }
 
-    public bool FindLedgeJump(Vector3 start, Vector3 dir, float maxDistance, float maxHeight)
+    public bool FindLedgeJump(Vector3 start, Vector3 dir, float maxDistance, float maxHeight, float belowHeight = 2f)
     {
-        float deltaHeight = maxHeight / rayCount;
-        for (int i = 0; i < rayCount; i++)
+        // Start at the maximum ledge height
+        // raycast below that by min ledge height, repeat
+        for (float offset = maxHeight - minHeight; 
+            offset >= -belowHeight - minHeight; 
+            offset -= minHeight)
         {
-            Vector3 offset = (Vector3.up * deltaHeight * i);
-            if (FindLedgeAtPoint(start + offset, dir, maxDistance, deltaHeight))
+            if (FindLedgeAtPoint(start + offset * Vector3.up, dir, maxDistance, minHeight))
                 return true;
         }
+
         return false;
     }
 
     public bool CanClimbUp(Vector3 start, Vector3 dir)
     {
-        if (!Physics.Raycast(start + Vector3.up * 2.1f, dir, 0.4f)
+        if (!Physics.Raycast(start + Vector3.up * 2.4f, dir, 0.4f)
             && !Physics.Raycast(start + Vector3.up * 3.9f, dir, 0.4f))
             return true;
 
@@ -45,10 +48,12 @@ public class LedgeDetector
 
     public bool FindLedgeAtPoint(Vector3 start, Vector3 dir, float maxDistance, float deltaHeight, bool ignoreFree = false)
     {
+        // Check in front
         RaycastHit hHit;
         Debug.DrawRay(start, dir * maxDistance, Color.red, 1.0f);
         if (Physics.Raycast(start, dir, out hHit, maxDistance))
         {
+            // check from top on ledge
             RaycastHit vHit;
             start = new Vector3(hHit.point.x + (minDepth * dir.x), 
                 start.y + deltaHeight, 
@@ -56,20 +61,24 @@ public class LedgeDetector
             Debug.DrawRay(start, Vector3.down * deltaHeight, Color.red, 1.0f);
             if (Physics.Raycast(start, Vector3.down, out vHit, deltaHeight))
             {
+                // Check hang room
                 start = new Vector3(hHit.point.x - dir.x * 0.1f,
-                    vHit.point.y + 0.1f,
+                    vHit.point.y,
                     hHit.point.z - dir.z * 0.1f);
-                Debug.DrawRay(start, dir * (0.1f + minDepth), Color.green, 5.0f);
-                if (!Physics.Raycast(start, dir, 0.1f + minDepth))
+                if (!Physics.Raycast(start, Vector3.down, 2f))
                 {
-                    grabPoint = new Vector3(hHit.point.x, vHit.point.y, hHit.point.z);
-                    direction = -hHit.normal;
+                    // Check min depth
+                    start.y += 0.1f;
+                    Debug.DrawRay(start, dir * (0.1f + minDepth), Color.green, 5.0f);
+                    if (!Physics.Raycast(start, dir, 0.1f + minDepth))
+                    {
+                        grabPoint = new Vector3(hHit.point.x, vHit.point.y, hHit.point.z);
+                        direction = -UMath.ZeroYInVector(hHit.normal);
 
-                    ledgeType = LedgeType.Normal;
-                    Debug.Log("returning true m8");
-                    return true;
+                        ledgeType = LedgeType.Normal;
+                        return true;
+                    }
                 }
-                
             }
             else if (hHit.collider.CompareTag("Freeclimb") && !ignoreFree)
             {
@@ -81,6 +90,7 @@ public class LedgeDetector
                 return true;
             }
         }
+
         return false;
     }
 

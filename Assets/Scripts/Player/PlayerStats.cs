@@ -35,15 +35,7 @@ public class PlayerStats : MonoBehaviour
         get { return health; }
         set
         {
-            health = value;
-
-            if (health > maxHealth)
-                health = maxHealth;
-            else if (health <= 0)
-            {
-                health = 0;
-                player.StateMachine.GoToState<Dead>();
-            }
+            health = (int)Mathf.Clamp(value, 0f, maxHealth);
 
             healthBar.localScale = new Vector3((float)health / maxHealth, 1f, 1f);
         }

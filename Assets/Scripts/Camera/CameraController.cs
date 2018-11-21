@@ -24,6 +24,7 @@ public class CameraController : MonoBehaviour
     private float xRot = 0.0f;
     private float OldPlayerRot = 0f;
     private float playerRot = 0f;
+    private float lastMouseMove = Time.deltaTime;
 
     private Transform pivot;
     private Transform lookAt;
@@ -62,6 +63,9 @@ public class CameraController : MonoBehaviour
         float x = Input.GetAxis(MouseX);
         float y = Input.GetAxis(MouseY);
 
+        if (x != 0f || y != 0f)
+            lastMouseMove = Time.time;
+
         if (x != 0f)
         {
             if (camState == CameraState.Grounded)
@@ -71,7 +75,6 @@ public class CameraController : MonoBehaviour
         }
 
         if (LAUTurning && camState == CameraState.Grounded
-            && Mathf.Abs(x) == 0f
             && target.GetComponent<PlayerController>().Anim.GetCurrentAnimatorStateInfo(0).IsName("RunWalk"))
             DoExtraRotation();
 
@@ -100,6 +103,9 @@ public class CameraController : MonoBehaviour
 
     private void DoExtraRotation()
     {
+        if (Time.time - lastMouseMove < 0.5f)
+            return;
+
         yRot += 1.6f * Input.GetAxis(target.GetComponent<PlayerInput>().horizontalAxis);
     }
 

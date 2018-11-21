@@ -9,6 +9,11 @@ public static class UMath
         return Mathf.Sqrt(Mathf.Pow(vector.x, 2) + Mathf.Pow(vector.z, 2));
     }
 
+    public static Vector3 ZeroYInVector(Vector3 vector)
+    {
+        return Vector3.Scale(vector, new Vector3(1f, 0f, 1f));
+    }
+
     public static Vector3 VelocityToReachPoint(Vector3 start, Vector3 end, float gravity, float time)
     {
         Vector3 relative = end - start;

@@ -39,8 +39,17 @@ public class Climbing : StateBase<PlayerController>
     public override void Update(PlayerController player)
     {
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
+        AnimatorTransitionInfo transInfo = player.Anim.GetAnimatorTransitionInfo(0);
 
         right = Input.GetAxisRaw(player.playerInput.horizontalAxis);
+
+        player.Anim.SetFloat("Right", right);
+
+        if (Input.GetKey(player.playerInput.crouch) && !isClimbingUp)
+        {
+            LetGo(player);
+            return;
+        }
 
         if (isInCornering || isOutCornering)
         {
@@ -48,19 +57,23 @@ public class Climbing : StateBase<PlayerController>
                 || animState.IsName("CornerRight") || animState.IsName("InCornerRight"))
             {
                 player.Anim.applyRootMotion = true;
+                return;
             }
             else if (animState.IsName("HangLoop"))
             {
                 isOutCornering = isInCornering = false;
             }
-            player.Anim.SetFloat("Right", right);
-            return;
+            else
+            {
+                return;
+            }
         }
         else if (isClimbingUp)
         {
             player.Anim.SetFloat("Speed", 0f);
+            player.Anim.SetFloat("TargetSpeed", 0f);
 
-            if (animState.IsName("Idle"))
+            if (animState.IsName("Idle") || transInfo.IsName("ClimbUp -> Idle"))
             {
                 player.StateMachine.GoToState<Locomotion>();
             }
@@ -83,29 +96,25 @@ public class Climbing : StateBase<PlayerController>
         HandleCorners(player);
         AdjustPosition(player);
 
-        player.Anim.SetFloat("Right", right);
-
-        if (Input.GetKey(player.playerInput.jump) && !isOutCornering && !isClimbingUp && right < 0.3f
+        if (Input.GetKey(player.playerInput.jump) && !isOutCornering && !isInCornering && !isClimbingUp
             && ledgeDetector.CanClimbUp(player.transform.position, player.transform.forward))
             ClimbUp(player);
-
-        if (Input.GetKey(player.playerInput.crouch) && !isOutCornering && !isInCornering && !isClimbingUp
-            && right < 0.3f)
-            LetGo(player);
     }
 
     private void HandleCorners(PlayerController player)
     {
-        Vector3 start = player.transform.position + (Vector3.up * 2f) - (player.transform.right * 0.24f);
+        float upOffset = player.hangUpOffset - 0.1f;
+
+        Vector3 start = player.transform.position + (Vector3.up * upOffset) - (player.transform.right * 0.3f);
         ledgeLeft = ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.2f, 0.2f);
 
-        start = player.transform.position + (Vector3.up * 2f) - (player.transform.forward * 0.15f);
+        start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
         ledgeInnerLeft = ledgeDetector.FindLedgeAtPoint(start, -player.transform.right, 0.34f, 0.2f);
 
-        start = player.transform.position + (Vector3.up * 2f) + (player.transform.right * 0.24f);
+        start = player.transform.position + (Vector3.up * upOffset) + (player.transform.right * 0.3f);
         ledgeRight = ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.2f, 0.2f);
 
-        start = player.transform.position + (Vector3.up * 2f) - (player.transform.forward * 0.15f);
+        start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
         ledgeInnerRight = ledgeDetector.FindLedgeAtPoint(start, player.transform.right, 0.34f, 0.2f);
 
         if (right < -0.1f)
@@ -117,7 +126,7 @@ public class Climbing : StateBase<PlayerController>
             }
             else if (!ledgeLeft)
             {
-                start = player.transform.position + (Vector3.up * 2f) - player.transform.right * 0.24f
+                start = player.transform.position + (Vector3.up * 2f) - player.transform.right * 0.3f
                     + player.transform.forward * 0.4f;
 
                 player.Anim.applyRootMotion = false; 
@@ -143,7 +152,7 @@ public class Climbing : StateBase<PlayerController>
             }
             else if (!ledgeRight)
             {
-                start = player.transform.position + (Vector3.up * 2f) + player.transform.right * 0.24f
+                start = player.transform.position + (Vector3.up * 2f) + player.transform.right * 0.3f
                     + player.transform.forward * 0.4f;
 
                 player.Anim.applyRootMotion = false; 
@@ -182,6 +191,7 @@ public class Climbing : StateBase<PlayerController>
 
     private void LetGo(PlayerController player)
     {
+        player.Anim.SetTrigger("LetGo");
         player.StateMachine.GoToState<InAir>();
     }
 

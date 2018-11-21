@@ -34,9 +34,19 @@ public class AutoGrabbing : StateBase<PlayerController>
 
         player.Velocity = UMath.VelocityToReachPoint(player.transform.position,
             calcGrabPoint,
-            UMath.GetHorizontalMag(player.Velocity) > 1f ? curSpeed + player.jumpZBoost : 3f,
+            UMath.GetHorizontalMag(player.Velocity) > 1f ? player.JumpZVel : player.StandJumpZVel,
             player.gravity,
             out grabTime);
+
+        if (grabTime < 0.5f || grabTime > 1.2f)
+        {
+            grabTime = Mathf.Clamp(grabTime, 0.5f, 1.2f);
+
+            player.Velocity = UMath.VelocityToReachPoint(player.transform.position,
+            calcGrabPoint,
+            player.gravity,
+            grabTime);
+        }
 
         timeTracker = Time.time;
     }
@@ -57,6 +67,8 @@ public class AutoGrabbing : StateBase<PlayerController>
 
         if (Time.time - timeTracker >= grabTime)
         {
+            player.Anim.SetTrigger("Grab");
+
             player.transform.position = grabPoint;
             player.transform.rotation = targetRot;
 

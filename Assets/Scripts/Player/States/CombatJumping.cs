@@ -15,6 +15,8 @@ public class CombatJumping : StateBase<PlayerController>
             Quaternion.LookRotation(Vector3.Cross(player.transform.forward, Vector3.up))
             : Quaternion.LookRotation((absAngle <= 45f ? 1f : -1f) * 
             Vector3.Scale(new Vector3(1f, 0f, 1f), player.Velocity.normalized));
+
+        player.Anim.SetFloat("AimAngle", 0f);
     }
 
     public override void OnExit(PlayerController player)
@@ -29,34 +31,34 @@ public class CombatJumping : StateBase<PlayerController>
 
         if (hasJumped)
         {
-            player.ApplyGravity(player.gravity);
-
-            if (player.Grounded || animState.normalizedTime >= 1f)
+            if (player.Grounded && player.Velocity.y <= 0f)
                 player.StateMachine.GoToState<Combat>();
+
+            player.ApplyGravity(player.gravity);
         }
         else
         {
             if (transInfo.IsName("CombatCompress -> JumpR"))
             {
                 player.ForceWaistRotation = false;
-                player.Velocity = player.transform.right * 4f + Vector3.up * player.jumpYVel;
+                player.Velocity = player.transform.right * 4f + Vector3.up * player.JumpYVel;
                 hasJumped = true;
             }
             else if (transInfo.IsName("CombatCompress -> JumpL"))
             {
                 player.ForceWaistRotation = false;
-                player.Velocity = player.transform.right * -4f + Vector3.up * player.jumpYVel;
+                player.Velocity = player.transform.right * -4f + Vector3.up * player.JumpYVel;
                 hasJumped = true;
             }
             else if (transInfo.IsName("CombatCompress -> JumpB"))
             {
                 player.ForceWaistRotation = false;
-                player.Velocity = player.transform.forward * -4f + Vector3.up * player.jumpYVel;
+                player.Velocity = player.transform.forward * -4f + Vector3.up * player.JumpYVel;
                 hasJumped = true;
             }
             else if (transInfo.IsName("CombatCompress -> JumpF"))
             {
-                player.Velocity = player.transform.forward * 4f + Vector3.up * player.jumpYVel;
+                player.Velocity = player.transform.forward * 4f + Vector3.up * player.JumpYVel;
                 hasJumped = true;
             }
             

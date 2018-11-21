@@ -60,12 +60,11 @@ class Grabbing : StateBase<PlayerController>
                 ledgeDetector.GrabPoint.y - (!animState.IsName("JumpUp") && !animState.IsName("Fall2") ? player.grabUpOffset : player.hangUpOffset),
                 ledgeDetector.GrabPoint.z - (player.transform.forward.z * player.grabForwardOffset));
 
-            grabType = ledgeDetector.GetGrabType(player.transform.position, player.transform.forward,
-                player.jumpZBoost, player.jumpYVel, -player.gravity);
-
             player.transform.position = grabPoint;
             Quaternion ledgeRot = Quaternion.LookRotation(ledgeDetector.Direction, Vector3.up);
             player.transform.rotation = Quaternion.Euler(0f, ledgeRot.eulerAngles.y, 0f);
+
+            player.Anim.SetTrigger("Grab");
 
             if (ledgeDetector.WallType == LedgeType.Free)
                 player.StateMachine.GoToState<Freeclimb>();
@@ -88,7 +87,10 @@ class Grabbing : StateBase<PlayerController>
             }
         }
         else if (player.Grounded)
+        {
+            player.Anim.SetTrigger("Land");
             player.StateMachine.GoToState<Locomotion>();
+        }
 
         lastPos = player.transform.position;
     }
