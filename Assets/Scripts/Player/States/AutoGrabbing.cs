@@ -38,15 +38,18 @@ public class AutoGrabbing : StateBase<PlayerController>
             player.gravity,
             out grabTime);
 
-        if (grabTime < 0.5f || grabTime > 1.2f)
+        // So Lara doesn't do huge upwards jumps or snap when close
+        if (grabTime < 0.4f || grabTime > 1.2f)
         {
-            grabTime = Mathf.Clamp(grabTime, 0.5f, 1.2f);
+            grabTime = Mathf.Clamp(grabTime, 0.4f, 1.2f);
 
             player.Velocity = UMath.VelocityToReachPoint(player.transform.position,
-            calcGrabPoint,
-            player.gravity,
-            grabTime);
+                                calcGrabPoint,
+                                player.gravity,
+                                grabTime);
         }
+
+        Debug.LogWarning("CALC BEL: " + player.Velocity);
 
         timeTracker = Time.time;
     }
@@ -77,5 +80,7 @@ public class AutoGrabbing : StateBase<PlayerController>
             else
                 player.StateMachine.GoToState<Climbing>();
         }
+
+        Debug.Log("Player vel: " + player.Velocity);
     }
 }

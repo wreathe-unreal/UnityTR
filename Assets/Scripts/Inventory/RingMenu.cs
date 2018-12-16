@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class RingMenu : MonoBehaviour
 {
@@ -10,8 +11,10 @@ public class RingMenu : MonoBehaviour
     public GameObject menu;
     public Transform rotater;
     public PlayerInventory inventory;
+    public Text nameText;
 
     private float angleChange = 90f;
+    private int currentItem = 0;
 
     private Quaternion targetRotation;
     private PlayerInput input;
@@ -40,19 +43,29 @@ public class RingMenu : MonoBehaviour
         
         if (rotater.rotation.eulerAngles.y == targetRotation.eulerAngles.y)
         {
-            if (Mathf.Abs(Input.GetAxisRaw(input.horizontalAxis)) > 0.3f)
-                RotateTo(Mathf.Sign(Input.GetAxisRaw(input.horizontalAxis)) * angleChange * Mathf.Rad2Deg);
+            float axisValue = Input.GetAxisRaw(input.horizontalAxis);
+
+            if (Mathf.Abs(axisValue) > 0.3f)
+                RotateTo((int)Mathf.Sign(axisValue));
         }
 
         if (Mathf.Abs(targetRotation.eulerAngles.y - rotater.eulerAngles.y) > 4f)
-            rotater.rotation = Quaternion.Lerp(rotater.rotation, targetRotation, rotationRate * Time.deltaTime);
+            rotater.rotation = Quaternion.Slerp(rotater.rotation, targetRotation, rotationRate * Time.deltaTime);
         else
             rotater.rotation = targetRotation;
     }
 
-    private void RotateTo(float delta)
+    private void RotateTo(int delta)
     {
-        targetRotation = Quaternion.Euler(0f, rotater.rotation.eulerAngles.y + delta, 0f);
+        currentItem += delta;
+
+        if (currentItem > inventory.Items.Count - 1)
+            currentItem = 0;
+        else if (currentItem < 0)
+            currentItem = inventory.Items.Count - 1;
+
+        targetRotation = Quaternion.Euler(0f, currentItem * angleChange * Mathf.Rad2Deg, 0f);
+        nameText.text = inventory.Items[currentItem].itemName;
     }
 
     private void EnableMenu()
@@ -73,22 +86,21 @@ public class RingMenu : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        angleChange = (2f * Mathf.PI) / inventory.itemCount;
+        angleChange = (2f * Mathf.PI) / inventory.Items.Count;
 
-        Debug.Log(inventory.itemCount + " " + angleChange);
-
-        for (int i = 0; i < inventory.Items.Length; i++)
+        for (int i = 0; i < inventory.Items.Count; i++)
         {
-            if (inventory.Items[i] == null)
-                continue;
+            /*if (inventory.Items[i] == null)
+                continue;*/
 
             GameObject item = Instantiate(inventory.Items[i].inventoryModel, rotater);
 
-            float angle = angleChange * (i + 1);
+            float angle = angleChange * i;
             float x = 2f * Mathf.Sin(angle);  // Convert polar co-ords to cartesian
             float z = -2f * Mathf.Cos(angle);
 
             item.transform.localPosition = new Vector3(x, 0f, z);
+            item.transform.rotation = Quaternion.LookRotation(item.transform.position - rotater.transform.position);
             foreach (Transform child in item.transform)
             {
                 child.gameObject.layer = rotater.gameObject.layer;
@@ -96,6 +108,7 @@ public class RingMenu : MonoBehaviour
             item.layer = rotater.gameObject.layer;
         }
 
-        
+        currentItem = 0;
+        nameText.text = inventory.Items[currentItem].itemName;
     }
 }

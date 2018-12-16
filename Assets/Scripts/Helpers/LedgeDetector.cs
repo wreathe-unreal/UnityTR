@@ -46,7 +46,7 @@ public class LedgeDetector
         return false;
     }
 
-    public bool FindLedgeAtPoint(Vector3 start, Vector3 dir, float maxDistance, float deltaHeight, bool ignoreFree = false)
+    public bool FindLedgeAtPoint(Vector3 start, Vector3 dir, float maxDistance, float deltaHeight, bool checkHangRoom = true)
     {
         // Check in front
         RaycastHit hHit;
@@ -65,7 +65,7 @@ public class LedgeDetector
                 start = new Vector3(hHit.point.x - dir.x * 0.1f,
                     vHit.point.y,
                     hHit.point.z - dir.z * 0.1f);
-                if (!Physics.Raycast(start, Vector3.down, 2f))
+                if (!checkHangRoom || !Physics.Raycast(start, Vector3.down, 2f))
                 {
                     // Check min depth
                     start.y += 0.1f;
@@ -80,7 +80,7 @@ public class LedgeDetector
                     }
                 }
             }
-            else if (hHit.collider.CompareTag("Freeclimb") && !ignoreFree)
+            else if (hHit.collider.CompareTag("Freeclimb"))
             {
                 ledgeType = LedgeType.Free;
 

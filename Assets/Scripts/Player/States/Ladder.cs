@@ -55,9 +55,10 @@ public class Ladder : StateBase<PlayerController>
         float forward = Input.GetAxisRaw(player.playerInput.verticalAxis);
         float right = Input.GetAxisRaw(player.playerInput.horizontalAxis);
 
-        if (Input.GetKeyDown(player.playerInput.crouch) && animState.IsName("LadderIdle"))
+        if (Input.GetKeyDown(player.playerInput.crouch))
         {
             player.Velocity = Vector3.zero;
+            player.Anim.SetTrigger("LetGo");
             player.StateMachine.GoToState<InAir>();
             return;
         }
@@ -65,6 +66,13 @@ public class Ladder : StateBase<PlayerController>
         if (player.transform.position.y > currentLadder.transform.position.y
             + (currentLadder.MainCollider.size.y - player.charControl.height))
         {
+            if (currentLadder.offAtTop && forward > 0.1f)
+            {
+                player.Anim.SetTrigger("GetOff");
+                isTransitioning = true;
+                return;
+            }
+
             forward = Mathf.Clamp(forward, -1f, 0f);
         }
         else if (player.transform.position.y < currentLadder.transform.position.y + 1f)

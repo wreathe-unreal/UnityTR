@@ -6,6 +6,8 @@ public class LadderVolume : MonoBehaviour
 {
     public static LadderVolume CURRENT_LADDER = null;
 
+    public bool offAtTop = false;
+
     private BoxCollider mainCollider;
 
     private void Start()

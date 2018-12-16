@@ -29,6 +29,20 @@ public class CombatJumping : StateBase<PlayerController>
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
         AnimatorTransitionInfo transInfo = player.Anim.GetAnimatorTransitionInfo(0);
 
+        if (Combat.target != null)
+        {
+            player.Anim.SetFloat("AimAngle",
+                Vector3.SignedAngle((Combat.target.position - player.transform.position).normalized,
+                player.transform.forward, Vector3.up));
+            Debug.Log("AimAngle: " + player.Anim.GetFloat("AimAngle"));
+        }
+        else
+        {
+            player.Anim.SetFloat("AimAngle",
+                Vector3.SignedAngle(UMath.ZeroYInVector(player.Cam.forward).normalized,
+                player.transform.forward, Vector3.up));
+        }
+
         if (hasJumped)
         {
             if (player.Grounded && player.Velocity.y <= 0f)

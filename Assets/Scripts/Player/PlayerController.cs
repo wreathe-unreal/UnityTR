@@ -23,7 +23,7 @@ public class PlayerController : MonoBehaviour
     public float deathHeight = 12f;
     [Header("Jump Settings")]
     public float jumpHeight = 1.2f;
-    public float jumpDistance = 4.2f;
+    public float jumpZBoost = 0.8f;
     public float standJumpDistance = 3f;
     [Header("IK Settings")]
     public float footYOffset = 0.1f;
@@ -84,8 +84,8 @@ public class PlayerController : MonoBehaviour
 
         float timeInAir = (2 * jumpYVel) / gravity;
 
-        jumpZVel = jumpDistance / timeInAir;  // u = s/t
-        standJumpZVel = standJumpDistance / timeInAir;
+        jumpZVel = /*jumpDistance / timeInAir*/runSpeed + jumpZBoost;  // u = s/t
+        standJumpZVel = /*standJumpDistance / timeInAir*/jumpZVel;
     }
 
     private void Start()
@@ -145,7 +145,7 @@ public class PlayerController : MonoBehaviour
 
         UpdateAnimator();
 
-        SlideOffSlopeLimit();
+        //SlideOffSlopeLimit();
 
         if (charControl.enabled)
             charControl.Move((anim.applyRootMotion ? Vector3.Scale(velocity, Vector3.up) : velocity) * Time.deltaTime);
@@ -188,7 +188,8 @@ public class PlayerController : MonoBehaviour
 
         Vector3 sphereStart = transform.position + Vector3.up * charControl.radius;
 
-        if (Physics.SphereCast(sphereStart, charControl.radius, Vector3.down, out groundHit, charControl.skinWidth + 0.1f))
+        if (Physics.SphereCast(sphereStart, charControl.radius, Vector3.down, out groundHit, charControl.skinWidth + 0.1f)
+            && !groundHit.collider.CompareTag("Water"))
         {
             isGrounded = true;
             groundInfo.Distance = transform.position.y - groundHit.point.y;
@@ -483,7 +484,8 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            velocity = targetVector;
+            //velocity = targetVector;
+            velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
         }
 
         anim.SetFloat("Speed",
@@ -552,20 +554,20 @@ public class PlayerController : MonoBehaviour
 
     public void RotateToVelocityGround(float smoothing = 0f)
     {
-        // if stops Lara returning to the default rotation when idle
-        if (!holdRotation)
-        {
-            Quaternion target = Quaternion.Euler(0.0f, Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg, 0.0f);
-            if (smoothing == 0f)
-                transform.rotation = target;
-            else
-                transform.rotation = Quaternion.Slerp(transform.rotation, target, smoothing * Time.deltaTime);
-        }
+        if (holdRotation || UMath.GetHorizontalMag(velocity) < 0.1f)
+            return;
+
+        Quaternion target = Quaternion.Euler(0.0f, Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg, 0.0f);
+        if (smoothing == 0f)
+            transform.rotation = target;
+        else
+            transform.rotation = Quaternion.Slerp(transform.rotation, target, smoothing * Time.deltaTime);
     }
 
     int direction = 1;
     bool adjustRotCombat = false;
 
+    // This method is necessary as Lara must run backwards 50% of the time
     public void RotateToVelocityStrafe(float smoothing = 8f)
     {
         // if stops Lara returning to the default rotation when idle
@@ -608,15 +610,14 @@ public class PlayerController : MonoBehaviour
 
     public void RotateToVelocity(float smoothing = 0f)
     {
-        // if stops Lara returning to the default rotation when idle
-        if (velocity.magnitude > 0.1f)
-        {
-            if (smoothing == 0f)
-                transform.rotation = Quaternion.LookRotation(velocity);
-            else
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(velocity),
-                    smoothing * Time.deltaTime);
-        }
+        if (holdRotation || UMath.GetHorizontalMag(velocity) < 0.1f)
+            return;
+
+        if (smoothing == 0f)
+            transform.rotation = Quaternion.LookRotation(velocity);
+        else
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(velocity),
+                smoothing * Time.deltaTime);
     }
 
     public void RotateToTarget(Vector3 target)

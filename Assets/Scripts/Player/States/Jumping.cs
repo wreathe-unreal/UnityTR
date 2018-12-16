@@ -47,7 +47,6 @@ public class Jumping : StateBase<PlayerController>
         if ((isRunJump|| isStandJump || isJumpUp) && !hasJumped)
         {
             player.Anim.applyRootMotion = false;
-            float curSpeed = UMath.GetHorizontalMag(player.Velocity);
 
             float zVel = isRunJump ? player.JumpZVel
                     : isStandJump ? player.StandJumpZVel
@@ -79,33 +78,31 @@ public class Jumping : StateBase<PlayerController>
                     player.StateMachine.GoToState<AutoGrabbing>();
                     return;
                 }
-                else if (vertPos <= relative.y) // she hits it around the hip just adjust velocity
+                else if (vertPos <= relative.y) // she hits it around the hip just adjust velocity to clear it
                 {
                     float time;
                     Vector3 adjustedVel = UMath.VelocityToReachPoint(player.transform.position,
                         ledgeDetector.GrabPoint, zVel, player.gravity, out time);
                     yVel = adjustedVel.y;
                 }
-
-                ledgesDetected = false;
             }
 
-            if (!ledgesDetected)  // can change in previous if - so NO else if
-            {
-                player.Velocity = player.transform.forward * zVel
-                    + Vector3.up * yVel;
-            }
+            player.Velocity = player.transform.forward * zVel
+                + Vector3.up * yVel;
 
             hasJumped = true;
         }
         else if (hasJumped)
         {
+            // TODO: Deal ledge detector and jump dist
+            player.ApplyGravity(/*Input.GetKey(player.playerInput.jump) ?*/ player.gravity /*: player.gravity + 4f*/);
+
             if (isGrabbing)
             {
                 player.StateMachine.GoToState<Grabbing>();
                 return;
             }
-            else
+            else if (player.Velocity.y <= 0f)
             {
                 player.StateMachine.GoToState<InAir>();
                 return;

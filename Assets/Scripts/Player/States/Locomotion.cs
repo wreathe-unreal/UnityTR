@@ -14,6 +14,7 @@ public class Locomotion : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
+        player.camController.State = CameraState.Grounded;
         player.camController.LAUTurning = true;
         player.EnableCharControl();
         player.Anim.SetBool("isJumping", false);
@@ -129,7 +130,12 @@ public class Locomotion : StateBase<PlayerController>
         }
 
         if (Input.GetKeyDown(player.playerInput.jump) && !isRootMotion)
+        {
+            if (animState.IsName("RunWalk"))
+                player.Anim.applyRootMotion = false;
+
             player.StateMachine.GoToState<Jumping>();
+        }
     }
 
     private void LookForStepLedges(PlayerController player)

@@ -4,13 +4,14 @@ using UnityEngine;
 
 public class Combat : StateBase<PlayerController>
 {
-    private Transform target;
+    public static Transform target;
     private Weapon leftPistol;
     private Weapon rightPistol;
 
     public override void OnEnter(PlayerController player)
     {
         player.EnableCharControl();
+        player.camController.LookAt = target;
         player.Anim.applyRootMotion = false;
         player.ForceWaistRotation = true;
         player.Anim.SetBool("isCombat", true);
@@ -25,9 +26,9 @@ public class Combat : StateBase<PlayerController>
 
     public override void OnExit(PlayerController player)
     {
-        target = null;
+        //target = null;
         player.Anim.applyRootMotion = false;
-        player.camController.State = CameraState.Grounded;
+        //player.camController.State = CameraState.Grounded;
     }
 
     public override void Update(PlayerController player)
@@ -82,7 +83,7 @@ public class Combat : StateBase<PlayerController>
         else
         {
             player.Anim.SetFloat("AimAngle", 
-                Vector3.SignedAngle((player.Cam.forward),
+                Vector3.SignedAngle(UMath.ZeroYInVector(player.Cam.forward).normalized,
                 player.transform.forward, Vector3.up));
         }
 
@@ -91,7 +92,7 @@ public class Combat : StateBase<PlayerController>
 
         player.camController.State = target == null ? CameraState.Grounded : CameraState.Combat;
 
-        //player.Anim.SetBool("isFiring", Input.GetKey(player.playerInput.fireWeapon));
+        player.Anim.SetBool("isFiring", Input.GetKey(player.playerInput.fireWeapon));
     }
 
     private void CheckForTargets(PlayerController player)

@@ -33,7 +33,6 @@ public class Swimming : StateBase<PlayerController>
     public override void Update(PlayerController player)
     {
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
-        Debug.Log("I swims now");
 
         if (isEntering)
         {
@@ -83,7 +82,7 @@ public class Swimming : StateBase<PlayerController>
                     isTreading = true;
                     player.Anim.SetBool("isTreading", true);
                     player.camController.PivotOnHead();
-                    player.transform.position = hit.point + (1.48f * Vector3.down);
+                    player.transform.position = hit.point + (1.52f * Vector3.down);
                     player.transform.rotation = Quaternion.Euler(0f, player.transform.rotation.y, 0f);
                 }
             }
@@ -95,22 +94,22 @@ public class Swimming : StateBase<PlayerController>
             player.MoveGrounded(player.treadSpeed, false, 4f);
             player.RotateToVelocityGround();
 
-            if (Input.GetButtonDown("Action"))
+            if (Input.GetKeyDown(player.playerInput.action))
             {
                 if (ledgeDetector.FindLedgeAtPoint(
                     player.transform.position + Vector3.up * player.charControl.height,
                     player.transform.forward,
                     0.4f,
-                    0.2f))
+                    0.2f, false))
                 {
-                    player.Anim.SetTrigger("ClimbUp");
+                    player.Anim.SetTrigger("ClimbOut");
                     isClimbingUp = true;
+                    player.Anim.applyRootMotion = true;
                     player.camController.PivotOnPivot();
-                    Vector3 climbPoint = ledgeDetector.GrabPoint 
+                    player.transform.position = ledgeDetector.GrabPoint 
                         - (ledgeDetector.Direction * 0.56f) 
-                        - Vector3.up * 1.8f; 
-                    Quaternion rotation = Quaternion.LookRotation(ledgeDetector.Direction, Vector3.up);
-                    player.MoveWait(climbPoint, rotation);
+                        - Vector3.up * 1.82f;
+                    player.transform.rotation = Quaternion.LookRotation(ledgeDetector.Direction, Vector3.up);
                 }
             }
         }

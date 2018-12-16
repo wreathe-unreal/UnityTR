@@ -9,6 +9,7 @@ public class InAir : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
+        player.camController.State = CameraState.Grounded;
         player.Anim.applyRootMotion = false;
         haltUpdate = false;
         screamed = false;

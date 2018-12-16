@@ -43,7 +43,10 @@ public class PlayerFootIK : MonoBehaviour
 
     private void OnAnimatorIK()
     {
-        //AdjustPosition();
+        AdjustPosition();
+
+        if (velocity > 0.1f || !playControl.StateMachine.IsInState<Locomotion>())
+            return;
 
         CorrectFootPosition(HumanBodyBones.LeftFoot, ref lFootPosition);
         CorrectFootPosition(HumanBodyBones.RightFoot, ref rFootPosition);
@@ -99,10 +102,10 @@ public class PlayerFootIK : MonoBehaviour
     {
         Vector3 targetPosition;
 
-        if (velocity == 0f)
+        if (velocity == 0f && anim.GetCurrentAnimatorStateInfo(0).IsName("Idle"))
         {
-            float rDiff = transform.position.y - rFootPosition.y;
-            float lDiff = transform.position.y - lFootPosition.y;
+            float rDiff = anim.GetBoneTransform(HumanBodyBones.RightFoot).position.y - rFootPosition.y;
+            float lDiff = anim.GetBoneTransform(HumanBodyBones.LeftFoot).position.y - lFootPosition.y;
 
             float greatest = !castFail ? Mathf.Max(rDiff, lDiff) : 0f;
 
@@ -110,10 +113,10 @@ public class PlayerFootIK : MonoBehaviour
         }
         else
         {
-            targetPosition = anim.bodyPosition;
+            targetPosition = bodyPosition = anim.bodyPosition;
         }
 
-        bodyPosition = Vector3.Lerp(bodyPosition, targetPosition, Time.deltaTime * 15f);
+        bodyPosition = Vector3.Lerp(bodyPosition, targetPosition, Time.deltaTime * 8f);
         anim.bodyPosition = bodyPosition;
     }
 }
