@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Medipack", menuName = "URaider/LargeMedipack")]
-public class MedipackItem : Item
+public class MedipackItem : PickUp
 {
     public int healthIncrease;
 
@@ -11,6 +10,6 @@ public class MedipackItem : Item
     {
         base.Use(player);
 
-        // Increase health
+        player.Stats.Health += healthIncrease;
     }
 }

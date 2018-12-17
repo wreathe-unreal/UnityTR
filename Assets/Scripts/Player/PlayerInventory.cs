@@ -6,9 +6,9 @@ public class PlayerInventory : MonoBehaviour
 {
     public int maxItems = 14;
 
-    private List<Item> items = new List<Item>();
+    private List<PickUp> items = new List<PickUp>();
 
-    public bool AddItem(Item item)
+    public bool AddItem(PickUp item)
     {
         if (items.Count >= maxItems)
         {
@@ -21,12 +21,12 @@ public class PlayerInventory : MonoBehaviour
         return true;
     }
 
-    public void RemoveItem(Item item)
+    public void RemoveItem(PickUp item)
     {
         items.Remove(item);
     }
 
-    public List<Item> Items
+    public List<PickUp> Items
     {
         get { return items; }
     }

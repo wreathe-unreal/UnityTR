@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Item", menuName = "URaider/Item")]
-public class Item : ScriptableObject
+public class Item : MonoBehaviour
 {
     public string itemName = "New Item";
     public bool holdAtStart = false;

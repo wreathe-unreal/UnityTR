@@ -19,8 +19,6 @@ public class Sliding : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        Debug.Log("in slide");
-
         if (Input.GetKeyDown(player.playerInput.jump))
         {
             player.RotateToVelocityGround(); // Stops player doing side jumps
@@ -41,11 +39,17 @@ public class Sliding : StateBase<PlayerController>
             return;
         }
 
+        if (Input.GetKeyDown(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
+        {
+            if (!player.UpperStateMachine.IsInState<UpperCombat>())
+                player.UpperStateMachine.GoToState<UpperCombat>();
+        }
+
         Vector3 slopeRight = Vector3.Cross(Vector3.up, player.Ground.Normal);
         Vector3 slopeDirection = Vector3.Cross(slopeRight, player.Ground.Normal).normalized;
 
         player.Velocity = slopeDirection * player.slideSpeed;
-        player.Velocity.Scale(new Vector3(1f, 0f, 1f));
+        player.Velocity.Scale(new Vector3(1f, 0f, 1f));  // Ensures correct gravity can be applied
         player.Velocity += Vector3.down * player.gravity;
 
         Debug.Log(player.Velocity);

@@ -2,12 +2,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Weapon Item", menuName = "URaider/Weapon Item")]
-public class WeaponItem : Item
+public class WeaponItem : PickUp
 {
+    public WeaponType type = WeaponType.Dual;
+
+    // Holstered objects
     public GameObject lHip;
     public GameObject rHip;
     public GameObject auxiliary;
 
-    // Activate correct weapons on Lara
+    // Weapon in hand (hence useable class)
+    public Weapon lHand;
+    public Weapon rHand;
+
+    public override void Use(PlayerController player)
+    {
+        base.Use(player);
+
+        player.Weapons.SetNewWeapon(this);
+    }
+}
+
+public enum WeaponType
+{
+    Dual,
+    Single,
+    Auxiliary
 }

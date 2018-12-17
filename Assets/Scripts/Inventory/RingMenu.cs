@@ -40,6 +40,11 @@ public class RingMenu : MonoBehaviour
 
         if (!isPaused)
             return;
+
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            inventory.Items[currentItem].Use(GetComponent<PlayerController>());
+        }
         
         if (rotater.rotation.eulerAngles.y == targetRotation.eulerAngles.y)
         {

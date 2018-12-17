@@ -37,10 +37,6 @@ public class PlayerController : MonoBehaviour
     public CameraController camController;
     public Transform waistBone;
     public Transform headBone;
-    public GameObject pistolLHand;
-    public GameObject pistolRHand;
-    public GameObject pistolLLeg;
-    public GameObject pistolRLeg;
     [Header("Ragdoll")]
     public Rigidbody[] ragRigidBodies;
 
@@ -59,6 +55,7 @@ public class PlayerController : MonoBehaviour
     private float targetSpeed = 0f;
 
     private StateMachine<PlayerController> stateMachine;
+    private StateMachine<PlayerController> upperStateMachine;
     [HideInInspector]
     public CharacterController charControl;
     [HideInInspector]
@@ -67,8 +64,7 @@ public class PlayerController : MonoBehaviour
     private Animator anim;
     private PlayerStats playerStats;
     private PlayerSFX playerSFX;
-    private Weapon[] pistols = new Weapon[2];
-    private Weapon[] auxiliaryWeapon;
+    private WeaponManager weaponManager;
     private Transform waistTarget;
     private Quaternion waistRotation;
     private Vector3 headLookAt;
@@ -95,12 +91,12 @@ public class PlayerController : MonoBehaviour
         cam = camController.GetComponentInChildren<Camera>().transform;
         anim = GetComponent<Animator>();
         playerSFX = GetComponent<PlayerSFX>();
-        pistols[0] = pistolLHand.GetComponent<Weapon>();
-        pistols[1] = pistolRHand.GetComponent<Weapon>();
         playerStats = GetComponent<PlayerStats>();
         playerStats.HideCanvas();
         velocity = Vector3.zero;
         stateMachine = new StateMachine<PlayerController>(this);
+        upperStateMachine = new StateMachine<PlayerController>(this);
+        weaponManager = GetComponent<WeaponManager>();
         SetUpStateMachine();
     }
 
@@ -124,7 +120,10 @@ public class PlayerController : MonoBehaviour
         stateMachine.AddState(new MonkeySwing());
         stateMachine.AddState(new HorPole());
         stateMachine.AddState(new Sliding());
+        upperStateMachine.AddState(new Empty());
+        upperStateMachine.AddState(new UpperCombat());
         stateMachine.GoToState<Locomotion>();
+        upperStateMachine.GoToState<Empty>();
     }
 
     private void Update()
@@ -142,6 +141,7 @@ public class PlayerController : MonoBehaviour
         CheckForGround();
 
         stateMachine.Update();
+        upperStateMachine.Update();
 
         UpdateAnimator();
 
@@ -631,16 +631,6 @@ public class PlayerController : MonoBehaviour
         velocity.y -= amount * Time.deltaTime;
     }
 
-    public void FireRightPistol()
-    {
-        pistols[1].Fire();
-    }
-
-    public void FireLeftPistol()
-    {
-        pistols[0].Fire();
-    }
-
     public void MinimizeCollider(float size = 0f)
     {
         charControl.radius = size;
@@ -666,6 +656,11 @@ public class PlayerController : MonoBehaviour
     public StateMachine<PlayerController> StateMachine
     {
         get { return stateMachine; }
+    }
+
+    public StateMachine<PlayerController> UpperStateMachine
+    {
+        get { return upperStateMachine; }
     }
 
     public CharacterController Controller
@@ -709,6 +704,11 @@ public class PlayerController : MonoBehaviour
     public PlayerStats Stats
     {
         get { return playerStats; }
+    }
+
+    public WeaponManager Weapons
+    {
+        get { return weaponManager; }
     }
 
     public bool Grounded

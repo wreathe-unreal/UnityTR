@@ -76,9 +76,10 @@ public class Locomotion : StateBase<PlayerController>
             player.StateMachine.GoToState<Sliding>();
             return;
         }
-        else if (Input.GetKeyDown(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
+        else if (Input.GetKey(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
         {
             player.StateMachine.GoToState<Combat>();
+            player.UpperStateMachine.GoToState<UpperCombat>();
             return;
         }
 

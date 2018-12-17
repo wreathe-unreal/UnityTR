@@ -9,9 +9,11 @@ public class Interactable : MonoBehaviour
         if (!other.transform.CompareTag("Player"))
             return;
 
-        if (Input.GetKeyDown("Action"))
+        PlayerController player = other.GetComponent<PlayerController>();
+
+        if (Input.GetKeyDown(player.playerInput.action))
         {
-            Interact(other.GetComponent<PlayerController>());
+            Interact(player);
         }
     }
 

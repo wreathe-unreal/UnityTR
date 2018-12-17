@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// Contains some useful methods for things I did constantly
 public static class UMath
 {
     public static float GetHorizontalMag(Vector3 vector)

@@ -95,14 +95,14 @@ public class Jumping : StateBase<PlayerController>
         else if (hasJumped)
         {
             // TODO: Deal ledge detector and jump dist
-            player.ApplyGravity(/*Input.GetKey(player.playerInput.jump) ?*/ player.gravity /*: player.gravity + 4f*/);
+            //player.ApplyGravity(/*Input.GetKey(player.playerInput.jump) ?*/ player.gravity /*: player.gravity + 4f*/);
 
             if (isGrabbing)
             {
                 player.StateMachine.GoToState<Grabbing>();
                 return;
             }
-            else if (player.Velocity.y <= 0f)
+            else 
             {
                 player.StateMachine.GoToState<InAir>();
                 return;

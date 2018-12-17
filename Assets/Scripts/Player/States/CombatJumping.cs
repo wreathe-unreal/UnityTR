@@ -10,13 +10,13 @@ public class CombatJumping : StateBase<PlayerController>
     {
         player.Anim.SetBool("isCombatJumping", true);
         hasJumped = false;
+
         float absAngle = Mathf.Abs(player.CombatAngle);
+
         player.transform.rotation = absAngle > 45f && absAngle < 135f ?
             Quaternion.LookRotation(Vector3.Cross(player.transform.forward, Vector3.up))
             : Quaternion.LookRotation((absAngle <= 45f ? 1f : -1f) * 
             Vector3.Scale(new Vector3(1f, 0f, 1f), player.Velocity.normalized));
-
-        player.Anim.SetFloat("AimAngle", 0f);
     }
 
     public override void OnExit(PlayerController player)
@@ -29,24 +29,14 @@ public class CombatJumping : StateBase<PlayerController>
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
         AnimatorTransitionInfo transInfo = player.Anim.GetAnimatorTransitionInfo(0);
 
-        if (Combat.target != null)
-        {
-            player.Anim.SetFloat("AimAngle",
-                Vector3.SignedAngle((Combat.target.position - player.transform.position).normalized,
-                player.transform.forward, Vector3.up));
-            Debug.Log("AimAngle: " + player.Anim.GetFloat("AimAngle"));
-        }
-        else
-        {
-            player.Anim.SetFloat("AimAngle",
-                Vector3.SignedAngle(UMath.ZeroYInVector(player.Cam.forward).normalized,
-                player.transform.forward, Vector3.up));
-        }
-
         if (hasJumped)
         {
-            if (player.Grounded && player.Velocity.y <= 0f)
+            if (player.Grounded)
+            {
+                player.ForceWaistRotation = true;
                 player.StateMachine.GoToState<Combat>();
+                return;
+            }
 
             player.ApplyGravity(player.gravity);
         }

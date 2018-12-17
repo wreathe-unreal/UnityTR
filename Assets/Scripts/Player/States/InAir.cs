@@ -57,7 +57,11 @@ public class InAir : StateBase<PlayerController>
                 player.SFX.PlayHitGroundSound();
                 player.StateMachine.GoToState<Dead>();
             }
-            else if (player.Ground.Angle <= player.charControl.slopeLimit)
+            else if (player.Ground.Tag == "Slope")
+            {
+                player.StateMachine.GoToState<Sliding>();
+            }
+            else
             {
                 player.Anim.SetTrigger("Land");
 
@@ -72,12 +76,15 @@ public class InAir : StateBase<PlayerController>
         } 
         else if (Input.GetKeyDown(player.playerInput.action) && !player.Anim.GetBool("isDive"))
         {
-            player.StateMachine.GoToState<Grabbing>();
-            return;
+            if (!player.UpperStateMachine.IsInState<UpperCombat>())
+            {
+                player.StateMachine.GoToState<Grabbing>();
+                return;
+            }
         }
-        else if (player.Ground.Tag == "Slope")
+        else if (Input.GetKey(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
         {
-            player.StateMachine.GoToState<Sliding>();
+            player.UpperStateMachine.GoToState<UpperCombat>();
         }
     }
 }
