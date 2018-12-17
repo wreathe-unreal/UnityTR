@@ -13,6 +13,9 @@ public class AIChase : StateBase<EnemyController>
     {
         float distance = Vector3.Distance(enemy.Target.transform.position, enemy.transform.position);
 
+        enemy.Anim.SetFloat("Speed", enemy.NavAgent.velocity.magnitude);
+        enemy.NavAgent.SetDestination(enemy.Target.transform.position);
+
         if (enemy.Health <= 0)
         {
             enemy.Anim.SetBool("isDead", true);
@@ -21,12 +24,7 @@ public class AIChase : StateBase<EnemyController>
 
             return;
         }
-        else if (Mathf.Abs(distance) > enemy.maxAimDistance)
-        {
-            enemy.Anim.SetFloat("Speed", enemy.NavAgent.speed);
-            enemy.NavAgent.SetDestination(enemy.Target.transform.position);
-        }
-        else
+        else if (Mathf.Abs(distance) <= enemy.NavAgent.stoppingDistance)
         {
             enemy.StateMachine.GoToState<AIEngaged>();
         }

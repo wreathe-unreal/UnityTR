@@ -106,7 +106,7 @@ public class Locomotion : StateBase<PlayerController>
         speed = Mathf.Lerp(speed, moveSpeed, Time.deltaTime * 10f);
 
         player.MoveGrounded(moveSpeed);
-        if (player.TargetSpeed > 1f)
+        if (player.TargetSpeed > 1f && !isRootMotion)
             player.RotateToVelocityGround();
         HandleLedgeStepMotion(player);
         LookForStepLedges(player);
@@ -141,7 +141,7 @@ public class Locomotion : StateBase<PlayerController>
 
     private void LookForStepLedges(PlayerController player)
     {
-        if (Input.GetButtonDown("Jump") && !isRootMotion && player.Anim.GetCurrentAnimatorStateInfo(0).IsName("Idle"))
+        if (Input.GetButtonDown("Jump") && !isRootMotion /*&& player.Anim.GetCurrentAnimatorStateInfo(0).IsName("Idle")*/)
         {
             isRootMotion = ledgeDetector.FindPlatformInfront(player.transform.position,
                 player.transform.forward, 2f);
@@ -177,6 +177,7 @@ public class Locomotion : StateBase<PlayerController>
     private void HandleLedgeStepMotion(PlayerController player)
     {
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
+        AnimatorTransitionInfo transInfo = player.Anim.GetAnimatorTransitionInfo(0);
         if (!waitingBool && isRootMotion && animState.IsName("Idle"))
         {
             player.EnableCharControl();
@@ -186,6 +187,17 @@ public class Locomotion : StateBase<PlayerController>
             || animState.IsName("StepUp_Full") || animState.IsName("RunStepUp_Qtr") || animState.IsName("RunStepUp_QtrM")))
         {
             waitingBool = false;
+            player.Anim.applyRootMotion = true;
+
+            Vector3 targetPos = ledgeDetector.GrabPoint + ledgeDetector.Direction * 0.24f;
+            player.Anim.MatchTarget(targetPos, Quaternion.LookRotation(ledgeDetector.Direction), AvatarTarget.Root,
+                new MatchTargetWeightMask(Vector3.one, 1f), 0.1f, 0.9f);
+        }
+        else if (transInfo.IsName("AnyState -> StepUp_Hlf") || transInfo.IsName("AnyState -> StepUp_Qtr")
+            || transInfo.IsName("AnyState -> StepUp_Full"))
+        {
+            Debug.Log("in trans");
+            player.Anim.applyRootMotion = false;
         }
     }
 }

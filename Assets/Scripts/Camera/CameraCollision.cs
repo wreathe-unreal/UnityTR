@@ -26,7 +26,8 @@ public class CameraCollision : MonoBehaviour
         Vector3 rayStart = pivot.transform.position;
         Vector3 dir = -pivot.transform.forward;
 
-        if (Physics.SphereCast(rayStart, sphereRadius, dir, out hit, initDist))
+        int allButPlayer = ~(1 << 8);
+        if (Physics.SphereCast(rayStart, sphereRadius, dir, out hit, initDist, allButPlayer, QueryTriggerInteraction.Ignore))
         {
             if (hit.transform.tag != "Player" && hit.transform.tag != "MainCamera")
             {

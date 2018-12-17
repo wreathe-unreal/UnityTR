@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class WeaponManager : MonoBehaviour
 {
+    [HideInInspector]
+    public Transform target;
+
     // All holstered weapons
     public List<GameObject> lHipWeapons;
     public List<GameObject> rHipWeapons;
     public List<GameObject> auxiliaryWeapons;
 
-    private WeaponItem currentWeapon;
+    public WeaponItem currentWeapon;
 
     public void SetNewWeapon(WeaponItem weapon)
     {
@@ -37,12 +40,12 @@ public class WeaponManager : MonoBehaviour
 
     public void FireRWeapon()
     {
-        currentWeapon.rHand.Fire();
+        currentWeapon.rHand.Fire(target.position + Vector3.up * 1f);
     }
 
     public void FireLWeapon()
     {
-        currentWeapon.lHand.Fire();
+        currentWeapon.lHand.Fire(target.position + Vector3.up * 1f);
     }
 
     public void HoldingCurrentWeapon(bool state)

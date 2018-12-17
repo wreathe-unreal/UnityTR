@@ -4,18 +4,13 @@ using UnityEngine;
 
 public class BulletHandler : MonoBehaviour
 {
-    public int damage;
-
-    private Rigidbody rb;
-
-    private void Start()
-    {
-        rb = GetComponent<Rigidbody>();
-
-    }
-
-    private void OnCollisionEnter(Collision collision)
+    protected virtual void Start()
     {
         
+    }
+
+    public virtual void HitHandler(Vector3 point, int damage)
+    {
+        Debug.Log("Bullet hit: " + gameObject.name);
     }
 }

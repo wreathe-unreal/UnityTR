@@ -6,14 +6,11 @@ public class Weapon : MonoBehaviour
 {
     public GameObject bullet;
 
-    public int ammo = 0;
-    public int clips = 0;
-    public int ammoPerClip = 0;
+    public int damage = 10;
     public float bulletDistance = 100f;
 
     private GameObject flash;
     private WeaponSFX sfx;
-    private Vector3 target;
 
     private void Start()
     {
@@ -21,28 +18,24 @@ public class Weapon : MonoBehaviour
         sfx = GetComponent<WeaponSFX>();
     }
 
-    public void Fire()
+    public void Fire(Vector3 target)
     {
         Vector3 origin = flash.transform.position;
-        Vector3 direction = ((target + Vector3.up * 0.8f) - origin).normalized;
-        GameObject firedBullet = Instantiate(bullet, origin, transform.rotation);
-
-        firedBullet.transform.position = origin + (direction * 0.2f);
-        Destroy(firedBullet, 2f);
+        Vector3 direction = (target - origin).normalized;
 
         StartCoroutine(DoFlash());
         sfx.PlayBang();
 
         RaycastHit hit;
-        Debug.DrawRay(origin, direction * bulletDistance, Color.red);
-        if (Physics.Raycast(origin, direction, out hit, bulletDistance))
+        Debug.DrawRay(origin, direction * bulletDistance, Color.red, 1f);
+        if (Physics.Raycast(origin, direction, out hit, bulletDistance, ~0, QueryTriggerInteraction.Ignore))
         {
-            if (hit.transform.gameObject.CompareTag("Enemy"))
-            {
-                EnemyController enemy = hit.collider.gameObject.GetComponent<EnemyController>();
-                enemy.Health -= 10;
-                Debug.Log("Health now: " + enemy.Health);
-            }
+            BulletHandler bHandler = hit.transform.gameObject.GetComponent<BulletHandler>();
+
+            if (bHandler == null)
+                return;
+
+            bHandler.HitHandler(hit.point, damage);
         }
     }
 
@@ -55,11 +48,5 @@ public class Weapon : MonoBehaviour
             yield return null;
         }
         flash.SetActive(false);
-    }
-
-    public Vector3 Target
-    {
-        get { return target; }
-        set { target = value; }
     }
 }

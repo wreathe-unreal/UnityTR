@@ -7,11 +7,15 @@ public class Dead : StateBase<PlayerController>
 {
     private bool ragged = false;
     private float timeCounter = 0f;
+    private float timeToWait = 1.5f;
 
     private Vector3 hitVelocity;
 
     public override void OnEnter(PlayerController player)
     {
+        if (player.Velocity.y < -10f)
+            timeToWait = 0.12f;
+
         player.Anim.SetBool("isDead", true);
         player.Anim.applyRootMotion = true;
         player.DisableCharControl();
@@ -33,15 +37,18 @@ public class Dead : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (Time.time - timeCounter >= 0.12f && !ragged)
+        if (Time.time - timeCounter >= timeToWait && !ragged)
         {
             ragged = true;
             player.Anim.enabled = false;
             player.EnableRagdoll();
             player.Velocity = -hitVelocity;
-            foreach (Rigidbody rb in player.ragRigidBodies)
+            if (player.Velocity.y < -20f)
             {
-                rb.AddForce(player.Velocity, ForceMode.Impulse);
+                foreach (Rigidbody rb in player.ragRigidBodies)
+                {
+                    rb.AddForce(player.Velocity, ForceMode.Impulse);
+                }
             }
         }
 

@@ -55,7 +55,7 @@ public class InAir : StateBase<PlayerController>
             {
                 player.GetComponent<AudioSource>().Stop();
                 player.SFX.PlayHitGroundSound();
-                player.StateMachine.GoToState<Dead>();
+                player.Stats.Health = 0;
             }
             else if (player.Ground.Tag == "Slope")
             {

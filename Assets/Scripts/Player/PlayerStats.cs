@@ -18,6 +18,13 @@ public class PlayerStats : MonoBehaviour
     {
         health = maxHealth;
         player = GetComponent<PlayerController>();
+        canvas.enabled = false;
+    }
+
+    private void Update()
+    {
+        if (health <= 0 && !player.StateMachine.IsInState<Dead>())
+            player.StateMachine.GoToState<Dead>();
     }
 
     public void ShowCanvas()

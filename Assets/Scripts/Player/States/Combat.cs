@@ -52,6 +52,6 @@ public class Combat : StateBase<PlayerController>
             player.ApplyGravity(player.gravity);
         }
 
-        player.camController.State = (UpperCombat.target == null ? CameraState.Grounded : CameraState.Combat);
+        player.camController.State = (player.Weapons.target == null ? CameraState.Grounded : CameraState.Combat);
     }
 }
