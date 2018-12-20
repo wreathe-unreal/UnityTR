@@ -19,12 +19,11 @@ public class PlayerController : MonoBehaviour
     public float slideSpeed = 5f;
     [Header("Physics")]
     public float gravity = 9.8f;
-    public float damageHeight = 6f;
+    public float damageHeight = 7f;
     public float deathHeight = 12f;
     [Header("Jump Settings")]
     public float jumpHeight = 1.2f;
     public float jumpZBoost = 0.8f;
-    public float standJumpDistance = 3f;
     [Header("IK Settings")]
     public float footYOffset = 0.1f;
     [Header("Offsets")]
@@ -48,6 +47,8 @@ public class PlayerController : MonoBehaviour
     private float jumpYVel = 0f;
     private float jumpZVel = 0f;
     private float standJumpZVel = 0f;
+    private float damageVelocity = 0f;
+    private float deathVelocity = 0f;
     private float combatAngle = 0f;
     [HideInInspector]
     public bool isMovingAuto = false;
@@ -69,6 +70,7 @@ public class PlayerController : MonoBehaviour
     private Quaternion waistRotation;
     private Vector3 headLookAt;
     private Vector3 velocity;
+    private Vector3 localVelocity;
     private GroundInfo groundInfo;
 
     private void Awake()
@@ -78,10 +80,11 @@ public class PlayerController : MonoBehaviour
         // Calc jump speeds - v^2 = u^2 + 2as
         jumpYVel = Mathf.Sqrt(2f * jumpHeight * gravity);
 
-        float timeInAir = (2 * jumpYVel) / gravity;
+        jumpZVel = runSpeed + jumpZBoost;  // u = s/t
+        standJumpZVel = walkSpeed + jumpZBoost;
 
-        jumpZVel = /*jumpDistance / timeInAir*/runSpeed + jumpZBoost;  // u = s/t
-        standJumpZVel = /*standJumpDistance / timeInAir*/jumpZVel;
+        damageVelocity = Mathf.Sqrt(2 * gravity * damageHeight);
+        deathVelocity = Mathf.Sqrt(2 * gravity * deathHeight);
     }
 
     private void Start()
@@ -94,6 +97,7 @@ public class PlayerController : MonoBehaviour
         playerStats = GetComponent<PlayerStats>();
         playerStats.HideCanvas();
         velocity = Vector3.zero;
+        localVelocity = Vector3.forward;
         stateMachine = new StateMachine<PlayerController>(this);
         upperStateMachine = new StateMachine<PlayerController>(this);
         weaponManager = GetComponent<WeaponManager>();
@@ -353,156 +357,63 @@ public class PlayerController : MonoBehaviour
         anim.SetFloat("AnimTime", animTime);  // Used for determining certain transitions
     }
 
-    public Vector3 RawTargetVector(float speed = 1f)
+    public Vector3 RawTargetVector(float speed = 1f, bool cameraRelative = false)
     {
-        // Raw input relative to camera
-        Vector3 directInput = new Vector3(Input.GetAxisRaw(playerInput.horizontalAxis), 0f,
-            Input.GetAxisRaw(playerInput.verticalAxis));
+        float horizontal = Input.GetAxisRaw(playerInput.horizontalAxis);
+        float vertical = Input.GetAxisRaw(playerInput.verticalAxis);
 
-        // Move direction in world space
-        Vector3 moveDirection = Quaternion.Euler(0, cam.eulerAngles.y, 0) * directInput;
+        Vector3 directInput = new Vector3(horizontal, 0f, vertical);
 
-        if (moveDirection.magnitude > 1f)
-            moveDirection.Normalize();  // Stops running too fast
+        if (directInput.magnitude > 1f)
+            directInput.Normalize();  // Stops running too fast
 
-        moveDirection *= speed;
+        directInput *= speed;
 
-        return moveDirection;
+        if (cameraRelative)
+            directInput = Quaternion.Euler(0f, cam.eulerAngles.y, 0f) * directInput;
+
+        return directInput;
     }
-
-    private bool adjustingRot = false;
 
     public void MoveGrounded(float speed, bool pushDown = true, float smoothing = 8f)
     {
         Vector3 targetVector = RawTargetVector(speed);
 
-        // Stops small annoying movements
-        if (targetVector.magnitude < 0.3f)
-            targetVector = Vector3.zero;
-
-        velocity.y = 0f; // So slerp is correct when pushDown is true
-
-        targetAngle = Vector3.SignedAngle(transform.forward, targetVector.normalized, Vector3.up);
+        targetAngle = Vector3.SignedAngle(Vector3.forward, targetVector.normalized, Vector3.up);
         targetSpeed = UMath.GetHorizontalMag(targetVector);
-
-        if (targetSpeed > 1f)
-            anim.SetFloat("FootTime", anim.GetFloat("AnimTime"));
 
         anim.SetFloat("SignedTargetAngle", targetAngle);
         anim.SetFloat("TargetAngle", Mathf.Abs(targetAngle));
         anim.SetFloat("TargetSpeed", targetSpeed);
 
-        if (UMath.GetHorizontalMag(velocity) < 0.1f)
+        // Allows Lara to smoothly take off
+        if (localVelocity == Vector3.zero && targetVector.magnitude > 0.1f)
         {
-            if (targetVector.magnitude > 0.1f)
-            {
-                velocity = transform.forward * 0.1f;
+            Vector3 camForward = cam.forward;
+            camForward.y = 0f;
+            camForward.Normalize();
 
-                if (!adjustingRot && Mathf.Abs(targetAngle) > 1f)
-                {
-                    adjustingRot = true;
-                }
-            }
-        }
-        else if (Mathf.Abs(targetAngle) > 36f)
-        {
-            adjustingRot = true;
+            localVelocity = Quaternion.FromToRotation(camForward, transform.forward) * (Vector3.forward * 0.1f);
         }
 
-        if (adjustingRot)
-        {
-            if (Vector3.Angle(velocity, targetVector) < 1f)
-            {
-                adjustingRot = false;
-                velocity = targetVector;
-            }
-            else
-            {
-                velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
-            }
-        }
+        if (Mathf.Abs(targetVector.magnitude - localVelocity.magnitude) < 0.1f && Vector3.Angle(localVelocity, targetVector) < 1f)
+            localVelocity = targetVector;
         else
-        {
-            velocity = targetVector;
-        }
+            localVelocity = Vector3.Slerp(localVelocity, targetVector, Time.deltaTime * smoothing);
 
-        float actualSpeed = UMath.GetHorizontalMag(velocity);
-        anim.SetFloat("Speed", actualSpeed, 0.15f, Time.deltaTime);
+        velocity = Quaternion.Euler(0f, cam.eulerAngles.y, 0f) * localVelocity;
+
+        float actualSpeed = direction * UMath.GetHorizontalMag(velocity);
+        anim.SetFloat("Speed", actualSpeed);
 
         if (pushDown)
             velocity.y = -gravity;  // so charControl is grounded consistently
     }
 
-    public void MoveStrafeGround(float speed, bool pushDown = true, float smoothing = 7f)
-    {
-        Vector3 targetVector = RawTargetVector(speed);
-
-        if (targetVector.magnitude < 0.3f)
-            targetVector = Vector3.zero;
-
-        velocity.y = 0f; // So slerp is correct when pushDown is true
-
-        AnimatorStateInfo animState = anim.GetCurrentAnimatorStateInfo(0);
-
-        Vector3 camForward = Vector3.Scale(cam.forward, new Vector3(1, 0, 1)).normalized;
-        Vector3 pForward = Vector3.Scale(transform.forward, new Vector3(1, 0, 1)).normalized;
-
-        targetAngle = Vector3.SignedAngle(transform.forward, targetVector.normalized, Vector3.up);
-        combatAngle = Vector3.SignedAngle(camForward, velocity.normalized, Vector3.up);
-        targetSpeed = UMath.GetHorizontalMag(targetVector);
-
-        anim.SetFloat("SignedTargetAngle", targetAngle);
-        anim.SetFloat("TargetAngle", 0f);
-        anim.SetFloat("combatAngle", combatAngle);
-        anim.SetFloat("TargetSpeed", targetSpeed);
-
-        if (UMath.GetHorizontalMag(velocity) < 0.1f)
-        {
-            if (!adjustingRot && targetVector.magnitude > 0.1f && Mathf.Abs(targetAngle) > 5f/*5*/)
-            {
-                adjustingRot = true;
-                velocity = Mathf.Abs(TargetAngle) > 80f ? targetVector : transform.forward * 3f;
-
-            }
-            else if (UMath.GetHorizontalMag(targetVector) < 0.3f)
-            {
-                velocity = Vector3.zero;
-            }
-        }
-        else if (Mathf.Abs(TargetAngle) > 36f /*20*/)
-        {
-            adjustingRot = true;
-        }
-
-        if (adjustingRot)
-        {
-            velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
-            if (Vector3.Angle(velocity, targetVector) < 5f)
-            {
-                adjustingRot = false;
-            }
-        }
-        else
-        {
-            //velocity = targetVector;
-            velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
-        }
-
-        anim.SetFloat("Speed",
-            direction *
-            UMath.GetHorizontalMag(velocity));
-        anim.SetFloat("Right", 0f);
-
-        if (pushDown)
-            velocity.y = -gravity;  // so charControl is grounded consistently
-    }
-
+    // Move on all axis not just horizontally
     public void MoveFree(float speed, float smoothing = 16f, float maxTurnAngle = 20f)
     {
-        Vector3 targetVector = cam.forward * Input.GetAxisRaw("Vertical")
-            + cam.right * Input.GetAxisRaw("Horizontal");
-        if (targetVector.magnitude > 1.0f)
-            targetVector = targetVector.normalized;
+        Vector3 targetVector = Quaternion.Euler(0f, cam.eulerAngles.y, 0f) * RawTargetVector();
 
         if (velocity.magnitude < 0.1f && targetVector.magnitude > 0f)
             velocity = transform.forward * 0.1f;  // Player will rotate smoothly from idle
@@ -521,25 +432,19 @@ public class PlayerController : MonoBehaviour
         anim.SetFloat("TargetSpeed", targetVector.magnitude);
     }
 
-    public void MoveInDirection(float speed, Vector3 dir, float smoothing = 8f, float maxTurnAngle = 24f)
+    Vector3 extraMovement = Vector3.zero;
+
+    public void MoveInDirection(float speed, Vector3 dir, float smoothing = 4f, float maxTurnAngle = 24f)
     {
-        Vector3 targetVector = dir;
+        Vector3 targetVector = dir * speed;
 
-        if (velocity.magnitude < 0.1f && targetVector.magnitude > 0f)
-            velocity = transform.forward * 0.1f;  // Player will rotate smoothly from idle
+        if (extraMovement.magnitude < 0.1f && targetVector.magnitude > 0f)
+            extraMovement = transform.forward * 0.1f;  // Player will rotate smoothly from idle
 
-        if (Vector3.Angle(velocity.normalized, targetVector) > maxTurnAngle)
-        {
-            Vector3 direction = Vector3.Cross(velocity.normalized, targetVector);
-            targetVector = Quaternion.AngleAxis(maxTurnAngle, direction) * velocity.normalized;
-        }
-
-        targetVector *= speed;
-
-        velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
+        extraMovement = Vector3.Lerp(extraMovement, targetVector, Time.deltaTime * smoothing);
+        velocity += extraMovement;
 
         anim.SetFloat("Speed", velocity.magnitude);
-        anim.SetFloat("TargetSpeed", targetVector.magnitude);
     }
 
     public void RotateToCamera()
@@ -570,47 +475,44 @@ public class PlayerController : MonoBehaviour
     // This method is necessary as Lara must run backwards 50% of the time
     public void RotateToVelocityStrafe(float smoothing = 8f)
     {
-        // if stops Lara returning to the default rotation when idle
-        if (UMath.GetHorizontalMag(velocity) > 0.3f && !holdRotation)
+        if (holdRotation || UMath.GetHorizontalMag(velocity) < 0.1f)
+            return;
+
+        float theAngle = Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg;
+
+        if (targetAngle < -50f || targetAngle > 140f)
         {
-            float theAngle = Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg;
+            if (direction != -1)
+                adjustRotCombat = true;
+            direction = -1;
+        }
+        else if (targetAngle > -40f && targetAngle < 130f)
+        {
+            if (direction != 1)
+                adjustRotCombat = true;
+            direction = 1;
+        }
 
-            if (combatAngle < -47f || combatAngle > 137f)
-            {
-                if (direction != -1)
-                    adjustRotCombat = true;
-                direction = -1;
-            }
-            else if (combatAngle > -43f && combatAngle < 133f)
-            {
-                if (direction != 1)
-                    adjustRotCombat = true;
-                direction = 1;
-            }
+        if (direction == -1)
+            theAngle += 180f;
 
-            if (direction == -1)
-                theAngle += 180f;
-
-            Quaternion target = Quaternion.Euler(0.0f, theAngle, 0.0f);
-            if (!adjustRotCombat)
-            {
-                //anim.speed = 1f;
-                transform.rotation = target;
-            }
+        Quaternion target = Quaternion.Euler(0.0f, theAngle, 0.0f);
+        if (!adjustRotCombat)
+        {
+            transform.rotation = target;
+        }
+        else
+        {
+            if (Mathf.Abs(Quaternion.Angle(target, transform.rotation)) > 10f)
+                transform.rotation = Quaternion.Lerp(transform.rotation, target, smoothing * Time.deltaTime);
             else
-            {
-                //anim.speed = 0f;
-                if (Mathf.Abs(Quaternion.Angle(target, transform.rotation)) > 10f)
-                    transform.rotation = Quaternion.Lerp(transform.rotation, target, smoothing * Time.deltaTime);
-                else
-                    adjustRotCombat = false;
-            }
+                adjustRotCombat = false;
         }
     }
 
     public void RotateToVelocity(float smoothing = 0f)
     {
-        if (holdRotation || UMath.GetHorizontalMag(velocity) < 0.1f)
+        if (holdRotation || velocity.magnitude < 0.1f)
             return;
 
         if (smoothing == 0f)
@@ -749,6 +651,16 @@ public class PlayerController : MonoBehaviour
         get { return standJumpZVel; }
     }
 
+    public float DamageVelocity
+    {
+        get { return damageVelocity; }
+    }
+
+    public float DeathVelocity
+    {
+        get { return deathVelocity; }
+    }
+
     public float CombatAngle
     {
         get { return combatAngle; }
@@ -772,10 +684,13 @@ public class PlayerController : MonoBehaviour
     public Vector3 Velocity
     {
         get { return velocity; }
-        set
-        {
-            velocity = value;
-        }
+        set { velocity = value; }
+    }
+
+    public Vector3 LocalVelocity
+    {
+        get { return localVelocity; }
+        set { localVelocity = value; }
     }
     #endregion
 }

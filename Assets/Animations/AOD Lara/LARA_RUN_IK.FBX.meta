@@ -169,7 +169,7 @@ ModelImporter:
     - serializedVersion: 16
       name: LARA_RUN
       takeName: LARA_RUN
-      firstFrame: 1
+      firstFrame: 0.1
       lastFrame: 31
       wrapMode: 0
       orientationOffsetY: 0.07

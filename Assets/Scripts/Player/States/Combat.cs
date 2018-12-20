@@ -43,7 +43,7 @@ public class Combat : StateBase<PlayerController>
             float moveSpeed = Input.GetKey(player.playerInput.walk) ? player.walkSpeed
             : player.runSpeed;
 
-            player.MoveStrafeGround(moveSpeed);
+            player.MoveGrounded(moveSpeed);
             if (player.TargetSpeed > 1f)
                 player.RotateToVelocityStrafe();
         }

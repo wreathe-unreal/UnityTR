@@ -29,6 +29,11 @@ public class CameraCollision : MonoBehaviour
         int allButPlayer = ~(1 << 8);
         if (Physics.SphereCast(rayStart, sphereRadius, dir, out hit, initDist, allButPlayer, QueryTriggerInteraction.Ignore))
         {
+            if (hit.distance == 0f)
+            {
+                Physics.Raycast(rayStart, dir, out hit, initDist);
+            }
+
             if (hit.transform.tag != "Player" && hit.transform.tag != "MainCamera")
             {
                 float pointOffset = (hit.point - pivot.position).magnitude;

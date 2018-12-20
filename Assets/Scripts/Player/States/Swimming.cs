@@ -12,6 +12,7 @@ public class Swimming : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
+        player.camController.LAUTurning = true;
         player.Anim.SetBool("isSwimming", true);
         player.Anim.applyRootMotion = false;
         isEntering = true;
@@ -22,6 +23,7 @@ public class Swimming : StateBase<PlayerController>
 
     public override void OnExit(PlayerController player)
     {
+        player.camController.LAUTurning = false;
         player.Anim.SetBool("isSwimming", false);
         player.Anim.applyRootMotion = true;
         isEntering = false;
@@ -62,66 +64,68 @@ public class Swimming : StateBase<PlayerController>
             return;
         }
 
+        // Horizontal Swimming
+        player.MoveGrounded(isTreading ? player.treadSpeed : player.swimSpeed, false, 4f);
+
         if (!isTreading)
         {
-            Debug.Log("I no tread now");
-            if (Input.GetButton("Jump"))
-                SwimUp(player);
-            else if (Input.GetButton("Crouch"))
-                SwimDown(player);
-            else
-                player.MoveFree(player.swimSpeed);
+            Vector3 playerForward = player.transform.forward;
+            playerForward.y = 0f;
+            playerForward.Normalize();
+
+            // Swim up and down
+            float upDownSpeed = Input.GetButton("Jump") || Input.GetButton("Crouch") ? player.swimSpeed : 0f;
+            Vector3 upDownDir = Input.GetButton("Jump") ? Vector3.up : Vector3.down;
+            player.MoveInDirection(upDownSpeed, upDownDir + playerForward * 0.1f);
 
             player.RotateToVelocity();
 
-            RaycastHit hit;
-            if (Physics.Raycast(player.transform.position + (Vector3.up * 0.5f), Vector3.down, out hit, 0.5f))
-            {
-                if (hit.transform.gameObject.CompareTag("Water"))
-                {
-                    isTreading = true;
-                    player.Anim.SetBool("isTreading", true);
-                    player.camController.PivotOnHead();
-                    player.transform.position = hit.point + (1.52f * Vector3.down);
-                    player.transform.rotation = Quaternion.Euler(0f, player.transform.rotation.y, 0f);
-                }
-            }
+            CheckForSurface(player);
         }
         else
         {
-            Debug.Log("I tread now");
-
-            player.MoveGrounded(player.treadSpeed, false, 4f);
             player.RotateToVelocityGround();
 
-            if (Input.GetKeyDown(player.playerInput.action))
+            CheckForClimbOut(player);
+        }
+    }
+
+    private void CheckForClimbOut(PlayerController player)
+    {
+        if (Input.GetKeyDown(player.playerInput.action))
+        {
+            LedgeInfo ledgeInfo;
+            if (ledgeDetector.FindLedgeAtPoint(
+                player.transform.position + Vector3.up * player.charControl.height,
+                player.transform.forward,
+                0.4f,
+                0.2f, out ledgeInfo))
             {
-                if (ledgeDetector.FindLedgeAtPoint(
-                    player.transform.position + Vector3.up * player.charControl.height,
-                    player.transform.forward,
-                    0.4f,
-                    0.2f, false))
-                {
-                    player.Anim.SetTrigger("ClimbOut");
-                    isClimbingUp = true;
-                    player.Anim.applyRootMotion = true;
-                    player.camController.PivotOnPivot();
-                    player.transform.position = ledgeDetector.GrabPoint 
-                        - (ledgeDetector.Direction * 0.56f) 
-                        - Vector3.up * 1.82f;
-                    player.transform.rotation = Quaternion.LookRotation(ledgeDetector.Direction, Vector3.up);
-                }
+                player.Anim.SetTrigger("ClimbOut");
+                isClimbingUp = true;
+                player.Anim.applyRootMotion = true;
+                player.camController.PivotOnPivot();
+                player.transform.position = ledgeInfo.Point
+                    - (ledgeInfo.Direction * 0.56f)
+                    - Vector3.up * 1.82f;
+                player.transform.rotation = Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up);
             }
         }
     }
 
-    private void SwimUp(PlayerController player)
+    private void CheckForSurface(PlayerController player)
     {
-        player.MoveInDirection(player.swimSpeed, Vector3.up);
-    }
-
-    private void SwimDown(PlayerController player)
-    {
-        player.MoveInDirection(player.swimSpeed, Vector3.down);
+        RaycastHit hit;
+        if (Physics.Raycast(player.transform.position + (Vector3.up * 0.5f), Vector3.down, out hit, 0.5f, ~(1 << 8), QueryTriggerInteraction.Collide))
+        {
+            if (hit.collider.CompareTag("Water"))
+            {
+                isTreading = true;
+                player.Anim.SetBool("isTreading", true);
+                player.camController.PivotOnHead();
+                player.transform.position = hit.point + (1.52f * Vector3.down);
+                player.transform.rotation = Quaternion.Euler(0f, player.transform.rotation.y, 0f);
+            }
+        }
     }
 }

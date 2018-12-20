@@ -44,7 +44,7 @@ class Freeclimb : StateBase<PlayerController>
 
         if (isInCornering || isOutCornering)
         {
-            if (animState.IsName("InCornerLeft") || animState.IsName("CornerLeft")
+            if (animState.IsName("FreeclimbCornerInR") || animState.IsName("FreeclimbCornerInL")
                 || animState.IsName("FreeclimbCornerOutR") || animState.IsName("FreeclimbCornerOutL"))
             {
                 player.Anim.applyRootMotion = true;
@@ -76,17 +76,12 @@ class Freeclimb : StateBase<PlayerController>
             return;
         }
 
-        Vector3 flatCheckStart = player.transform.position + 2f * Vector3.up - player.transform.forward * 0.2f;
-        if (forward > 0.1f && ledgeDetector.FindLedgeAtPoint(player.transform.position + Vector3.up * 1.5f,
-            player.transform.forward,
-            0.6f,
-            0.2f, true))
+        Vector3 flatCheckStart = player.transform.position + 1.75f * Vector3.up - player.transform.forward * 0.2f;
+        if (forward > 0.1f && !Physics.Raycast(flatCheckStart, player.transform.forward, 1f))
         {
             isClimbingUp = true;
             player.Anim.SetBool("isClimbingUp", true);
         }
-
-        
 
         HandleCorners(player);
 
@@ -118,78 +113,91 @@ class Freeclimb : StateBase<PlayerController>
         }
     }
 
-    private void HandleCorners(PlayerController player)
+    public enum CornerType
     {
+        Stop,
+        Continue,
+        Out,
+        In
+    }
+
+    private CornerType CheckCorner(PlayerController player, Vector3 dir)
+    {
+        if (right == 0f)
+            return CornerType.Continue;
+
         float upOffset = player.charControl.height * 0.75f;
+        LedgeInfo ledgeInfo;
 
-        Vector3 start = player.transform.position + (Vector3.up * upOffset) - (player.transform.right * 0.4f);
-        bool ledgeLeft = Physics.Raycast(start, player.transform.forward, forwardOffset + 0.2f);
-
-        start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
-        bool ledgeInnerLeft = Physics.Raycast(start, -player.transform.right, 0.2f);
-
-        start = player.transform.position + (Vector3.up * upOffset) + (player.transform.right * 0.4f);
-        bool ledgeRight = Physics.Raycast(start, player.transform.forward, forwardOffset + 0.2f);
-
-        start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
-        bool ledgeInnerRight = Physics.Raycast(start, player.transform.right, 0.2f);
-
-        if (right < -0.1f)
+        // Tests if something is in way of dir
+        Vector3 start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
+        if (!Physics.Raycast(start, dir, 0.4f))
         {
-            if (ledgeInnerLeft)
-            {
-                player.Anim.applyRootMotion = false; // Stops player overshooting turn point
-                isInCornering = true;
-            }
-            else if (!ledgeLeft)
-            {
-                Debug.Log("no lefter2)");
-                start = player.transform.position + (Vector3.up * upOffset) - player.transform.right * 0.42f
+            // Test for continue as usual
+            start = player.transform.position + (Vector3.up * upOffset) + dir * 0.4f;
+
+            bool normalLedge = ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.6f, 0.2f, out ledgeInfo)
+                && ledgeInfo.Type == LedgeType.Free;
+
+            if (normalLedge)
+                return CornerType.Continue;
+
+            // Test for stopping cause end of freeclimb
+            if (Physics.Raycast(start, player.transform.forward, 0.6f))
+                return CornerType.Stop;
+
+            // Test for out cornering
+            start = player.transform.position + (Vector3.up * upOffset) + dir * 0.4f
                     + player.transform.forward * 0.52f;
 
-                player.Anim.applyRootMotion = false;
-                isOutCornering = Physics.Raycast(start, player.transform.right, 0.5f);
+            bool ledgeOutThere = ledgeDetector.FindLedgeAtPoint(start, -dir, 0.5f, 0.2f, out ledgeInfo)
+                && ledgeInfo.Type == LedgeType.Free;
 
-                if (!isOutCornering)
-                    right = Mathf.Clamp01(right);
-            }
-            else
-            {
-                start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
+            if (ledgeOutThere)
+                return CornerType.Out;
 
-                if (Physics.Raycast(start, player.transform.right, 0.4f))
-                    right = Mathf.Clamp(right, -1f, 0);
-            }
-        }
-        else if (right > 0.1f)
-        {
-            if (ledgeInnerRight)
-            {
-                player.Anim.applyRootMotion = false;
-                isInCornering = true;
-            }
-            else if (!ledgeRight)
-            {
-                start = player.transform.position + (Vector3.up * 2f) + player.transform.right * 0.42f
-                    + player.transform.forward * 0.52f;
-
-                player.Anim.applyRootMotion = false;
-                isOutCornering = Physics.Raycast(start, -player.transform.right, 0.5f);
-
-                if (!isOutCornering)
-                    right = Mathf.Clamp(right, -1f, 0f);
-            }
-            else
-            {
-                start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
-
-                if (Physics.Raycast(start, -player.transform.right, 0.4f))
-                    right = Mathf.Clamp01(right);
-            }
+            // There is an out corner but its not climbable
+            return CornerType.Stop;
         }
         else
         {
-            isOutCornering = isInCornering = false;
+            start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
+
+            // Something is either blocking or we have to climb inwards
+            bool ledgeThere = ledgeDetector.FindLedgeAtPoint(start, dir, 0.4f, 0.2f, out ledgeInfo)
+                && ledgeInfo.Type == LedgeType.Free;
+
+            if (ledgeThere)
+                return CornerType.In;
+
+            // There is an in non-climbable corner
+            return CornerType.Stop;
+        }
+    }
+
+    private void HandleCorners(PlayerController player)
+    {
+        Vector3 desiredDirection = Mathf.Sign(right) * player.transform.right;
+
+        CornerType moveType = CheckCorner(player, desiredDirection);
+
+        if (moveType == CornerType.Out)
+        {
+            player.Anim.applyRootMotion = false;
+            isOutCornering = true;
+        }
+        else if (moveType == CornerType.In)
+        {
+            player.Anim.applyRootMotion = false;
+            isInCornering = true;
+        }
+        else if (moveType == CornerType.Stop)
+        {
+            right = 0f;
+            player.Anim.applyRootMotion = false;
+        }
+        else
+        {
             player.Anim.applyRootMotion = true;
         }
 

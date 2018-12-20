@@ -45,18 +45,25 @@ public class StateMachine<T>
         Debug.LogError("State is not available.");
     }
 
+    public void GoToState<TState>(object context)
+    {
+        foreach (StateBase<T> state in possibleStates)
+        {
+            if (state is TState)
+            {
+                if (currentState != null)
+                    currentState.OnExit(owner);
+                currentState = state;
+                currentState.ReceiveContext(context);
+                currentState.OnEnter(owner);
+                return;
+            }
+        }
+        Debug.LogError("State is not available.");
+    }
+
     public void Update()
     {
         currentState.Update(owner);
-    }
-
-    public void SendMessage(ControllerColliderHit msg)
-    {
-        currentState.HandleMessage(owner, msg);
-    }
-
-    public void SendMessage(string msg)
-    {
-        currentState.HandleMessage(owner, msg);
     }
 }

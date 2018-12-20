@@ -31,7 +31,7 @@ public class CombatJumping : StateBase<PlayerController>
 
         if (hasJumped)
         {
-            if (player.Grounded)
+            if (player.Grounded && player.Velocity.y <= 0f)
             {
                 player.ForceWaistRotation = true;
                 player.StateMachine.GoToState<Combat>();

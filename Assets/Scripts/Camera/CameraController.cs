@@ -6,10 +6,12 @@ public class CameraController : MonoBehaviour
 {
     public bool mouseControl = true;
     public float rotationSpeed = 120.0f;
-    public float yMax = 80.0f;
-    public float yMin = -45.0f;
+    public float pitchMax = 80.0f;
+    public float pitchMin = -45.0f;
     public float rotationSmoothing = 30f;
     public float translationSmoothing = 30f;
+    public float turnRate = 1.6f;
+    public float verticalTurnInfluence = 0.6f;
     public bool LAUTurning = true;
     public bool isSplit = false;
     public string MouseX = "Mouse X";
@@ -21,11 +23,10 @@ public class CameraController : MonoBehaviour
 
     public Transform target;
 
-    private float yRot = 0.0f;
-    private float xRot = 0.0f;
-    private float OldPlayerRot = 0f;
-    private float playerRot = 0f;
+    private float yaw = 0.0f;
+    private float pitch = 0.0f;
     private float lastMouseMove = 0f;
+    private float currentTurnRate = 0f;
 
     private Transform pivot;
     private Transform lookAt;
@@ -40,8 +41,10 @@ public class CameraController : MonoBehaviour
         forceDirection = Vector3.zero;
         camState = CameraState.Grounded;
         cam = GetComponentInChildren<Camera>();
+
         if (isSplit)
             cam.rect = new Rect(position, size);
+
         pivot = cam.transform.parent;
         pivotOrigin = pivot.localPosition;
         targetPivotPosition = pivot.localPosition;
@@ -69,20 +72,22 @@ public class CameraController : MonoBehaviour
             if (x != 0f || y != 0f)
                 lastMouseMove = Time.time;
 
-            if (camState == CameraState.Grounded)
-                yRot += x * rotationSpeed * Time.deltaTime;
-            else
-                yRot = Quaternion.LookRotation((lookAt.position - target.position).normalized, Vector3.up).eulerAngles.y;
+            if (camState == CameraState.Grounded || camState == CameraState.Climb)
+                yaw += x * rotationSpeed * Time.deltaTime;
+            else if (camState == CameraState.Combat)
+                yaw = Quaternion.LookRotation((lookAt.position - target.position).normalized, Vector3.up).eulerAngles.y;
 
-            xRot -= y * rotationSpeed * Time.deltaTime; // Negative so mouse up = cam down
-            xRot = Mathf.Clamp(xRot, yMin, yMax);
+            if (camState == CameraState.Climb)
+                LimitYaw(80f, ref yaw);
+
+            pitch -= y * rotationSpeed * Time.deltaTime; // Negative so mouse up = cam down
+            pitch = Mathf.Clamp(pitch, pitchMin, pitchMax);
         }
 
-        if (LAUTurning && camState == CameraState.Grounded
-            && target.GetComponent<PlayerController>().Anim.GetCurrentAnimatorStateInfo(0).IsName("RunWalk"))
+        if (LAUTurning && camState == CameraState.Grounded)
             DoExtraRotation();
 
-        Quaternion targetRot = Quaternion.Euler(xRot, yRot, 0.0f);
+        Quaternion targetRot = Quaternion.Euler(pitch, yaw, 0.0f);
 
         if (rotationSmoothing != 0f)
             pivot.rotation = Quaternion.Slerp(pivot.rotation, targetRot, rotationSmoothing * Time.deltaTime);
@@ -90,6 +95,14 @@ public class CameraController : MonoBehaviour
             pivot.rotation = targetRot;
 
         pivot.localPosition = Vector3.Lerp(pivot.localPosition, targetPivotPosition, Time.deltaTime * 2f);
+    }
+
+    private void LimitYaw(float range, ref float yaw)
+    {
+        float yawMax = target.eulerAngles.y + range;
+        float yawMin = target.eulerAngles.y - range;
+
+        yaw = Mathf.Clamp(yaw % 360f, yawMin, yawMax);
     }
 
     private void HandleMovement()
@@ -102,20 +115,33 @@ public class CameraController : MonoBehaviour
 
     private void DoExtraRotation()
     {
-        if (Time.time - lastMouseMove < 0.5f)
-            return;
+        string horizontal = target.GetComponent<PlayerInput>().horizontalAxis;
+        string vertical = target.GetComponent<PlayerInput>().verticalAxis;
 
-        yRot += 1.6f * Input.GetAxis(target.GetComponent<PlayerInput>().horizontalAxis);
+        float axisValue = Input.GetAxis(horizontal);
+        float vertAxis = Input.GetAxis(vertical);
+
+        if (Time.time - lastMouseMove < 0.75f)
+            currentTurnRate = 0f;
+        else
+            currentTurnRate = turnRate - (vertAxis * verticalTurnInfluence);
+
+        yaw += currentTurnRate * axisValue;
     }
 
     public void PivotOnHead()
     {
-        targetPivotPosition = Vector3.zero + Vector3.up * 1.7f;
+        targetPivotPosition = Vector3.up * 1.7f;
     }
 
     public void PivotOnTarget()
     {
         targetPivotPosition = Vector3.zero;
+    }
+
+    public void PivotOnHip()
+    {
+        targetPivotPosition = Vector3.up;
     }
 
     public void PivotOnPivot()
@@ -147,5 +173,6 @@ public enum CameraState
 {
     Freeze,
     Grounded,
-    Combat
+    Combat,
+    Climb
 }

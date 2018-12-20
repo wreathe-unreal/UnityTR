@@ -1,7 +1,7 @@
 fileFormatVersion: 2
 guid: bbac6cbd9bd782a4aa76349a80d9309d
 ModelImporter:
-  serializedVersion: 22
+  serializedVersion: 23
   fileIDToRecycleName:
     100000: ANKLE_L
     100002: ANKLE_R
@@ -178,7 +178,7 @@ ModelImporter:
       lastFrame: 49
       wrapMode: 0
       orientationOffsetY: 0
-      level: 0
+      level: 0.14
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
@@ -222,6 +222,8 @@ ModelImporter:
     secondaryUVHardAngle: 88
     secondaryUVPackMargin: 4
     useFileScale: 1
+    previousCalculatedGlobalScale: 0.01
+    hasPreviousCalculatedGlobalScale: 1
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0
@@ -1601,7 +1603,6 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     rootMotionBoneName: 
-    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
     hasTranslationDoF: 0
     hasExtraRoot: 1
     skeletonHasParents: 1

@@ -7,13 +7,13 @@ public class Dead : StateBase<PlayerController>
 {
     private bool ragged = false;
     private float timeCounter = 0f;
-    private float timeToWait = 1.5f;
+    private float timeToWait = 2f;
 
     private Vector3 hitVelocity;
 
     public override void OnEnter(PlayerController player)
     {
-        if (player.Velocity.y < -10f)
+        if (player.Velocity.y < -14f)
             timeToWait = 0.12f;
 
         player.Anim.SetBool("isDead", true);

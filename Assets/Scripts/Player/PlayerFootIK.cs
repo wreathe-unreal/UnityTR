@@ -64,38 +64,50 @@ public class PlayerFootIK : MonoBehaviour
 
     private void UpdateFoot(HumanBodyBones foot, ref Vector3 position, ref Quaternion rotation)
     {
+
         Vector3 castStart = anim.GetBoneTransform(foot).position;
         castStart.y = transform.position.y + startHeight;
 
         Debug.DrawRay(castStart, Vector3.down * (startHeight + castDistance), Color.red);
 
+        Vector3 targetPosition;
+        Quaternion targetRotation;
+
         RaycastHit hit;
         if (Physics.Raycast(castStart, Vector3.down, out hit, startHeight + castDistance))
         {
-            position = castStart;
-            position.y = hit.point.y + yOffset;
-            rotation = Quaternion.FromToRotation(Vector3.up, hit.normal) * transform.rotation;
+            targetPosition = castStart;
+            targetPosition.y = hit.point.y + yOffset;
+            targetRotation = Quaternion.FromToRotation(Vector3.up, hit.normal) * transform.rotation;
         }
         else
         { 
             castFail = true;
+            targetPosition = anim.GetBoneTransform(foot).position;
+            targetRotation = anim.GetBoneTransform(foot).rotation;
         }
+
+        position = /*Vector3.Lerp(position,*/ targetPosition/*, Time.deltaTime * 8f)*/;
+        rotation = /*Quaternion.Slerp(rotation,*/ targetRotation/*, Time.deltaTime * 4f)*/;
     }
 
     private void CorrectFootPosition(HumanBodyBones foot, ref Vector3 position)
     {
+        Vector3 targetPos;
+
         if (!castFail)
         {
             Vector3 initialPos = anim.GetBoneTransform(foot).position;
             initialPos.y = position.y;
-            position = initialPos;
+            targetPos = initialPos;
             
         }
         else
         {
-            position = anim.GetBoneTransform(foot).position;
+            targetPos = anim.GetBoneTransform(foot).position;
         }
-        
+
+        position = targetPos;
     }
 
     private void AdjustPosition()

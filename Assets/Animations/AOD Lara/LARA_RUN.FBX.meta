@@ -169,10 +169,10 @@ ModelImporter:
     - serializedVersion: 16
       name: LARA_RUN
       takeName: LARA_RUN
-      firstFrame: 1
+      firstFrame: 0.1
       lastFrame: 31
       wrapMode: 0
-      orientationOffsetY: 0
+      orientationOffsetY: 0.075
       level: 0
       cycleOffset: 0
       loop: 0
@@ -1659,7 +1659,6 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     rootMotionBoneName: 
-    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
     hasTranslationDoF: 0
     hasExtraRoot: 1
     skeletonHasParents: 1

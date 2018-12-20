@@ -38,12 +38,16 @@ public class EnemyController : MonoBehaviour
         stateMachine.AddState(new AIIdle());
         stateMachine.AddState(new AIChase());
         stateMachine.AddState(new AIEngaged());
+        stateMachine.AddState(new AIDead());
         stateMachine.GoToState<AIIdle>();
     }
 
     private void Update()
     {
         stateMachine.Update();
+
+        if (health <= 0)
+            stateMachine.GoToState<AIDead>();
     }
 
     private void OnTriggerStay(Collider other)
@@ -78,9 +82,6 @@ public class EnemyController : MonoBehaviour
             if (health <= 0)
             {
                 health = 0;
-                Anim.SetBool("isDead", true);
-
-                isAlive = false;
             }
         }
     }

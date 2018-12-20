@@ -18,6 +18,7 @@ public class Climbing : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
+        player.camController.State = CameraState.Climb;
         player.Velocity = Vector3.zero;
         player.MinimizeCollider();
         player.DisableCharControl();
@@ -27,6 +28,7 @@ public class Climbing : StateBase<PlayerController>
 
     public override void OnExit(PlayerController player)
     {
+        player.camController.State = CameraState.Grounded;
         player.MaximizeCollider();
         player.EnableCharControl();
         player.Anim.applyRootMotion = false;
@@ -96,7 +98,7 @@ public class Climbing : StateBase<PlayerController>
         HandleCorners(player);
         AdjustPosition(player);
 
-        if (Input.GetKey(player.playerInput.jump) && !isOutCornering && !isInCornering && !isClimbingUp
+        if (Input.GetKey(player.playerInput.jump) && animState.IsName("HangLoop")
             && ledgeDetector.CanClimbUp(player.transform.position, player.transform.forward))
             ClimbUp(player);
     }
@@ -181,6 +183,8 @@ public class Climbing : StateBase<PlayerController>
 
     private void ClimbUp(PlayerController player)
     {
+        player.camController.State = CameraState.Grounded;
+
         if (Input.GetButton("Sprint"))
             player.Anim.SetTrigger("Handstand");
         else
@@ -199,29 +203,20 @@ public class Climbing : StateBase<PlayerController>
     {
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
 
-        Debug.Log(ledgeDetector.GrabPoint.y - player.transform.position.y);
-
-        RaycastHit hit;
         Vector3 start = player.transform.position + Vector3.up * (player.hangUpOffset - 0.1f);
-        Debug.DrawRay(start, player.transform.forward * 0.4f, Color.green);
-        
-        if (ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.2f, 0.2f)
-            /*Physics.Raycast(start, player.transform.forward, out hit, 0.4f)*/)
+
+        LedgeInfo ledgeInfo;
+        if (ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.2f, 0.2f, out ledgeInfo))
         {
-            Quaternion targetRot = Quaternion.Euler(0f, Quaternion.LookRotation(ledgeDetector.Direction, Vector3.up).eulerAngles.y, 0f);
+            Quaternion targetRot = Quaternion.Euler(0f, Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up).eulerAngles.y, 0f);
 
             player.transform.rotation = Quaternion.Slerp(player.transform.rotation,
                 targetRot, 10f * Time.deltaTime);
 
-            player.transform.position = new Vector3(
-                ledgeDetector.GrabPoint.x
-                - (player.transform.forward.x * player.hangForwardOffset),
+            Vector3 newPosition = ledgeInfo.Point - (player.transform.forward * player.hangForwardOffset);
+            newPosition.y = animState.IsName("HangLoop") ? ledgeInfo.Point.y - player.hangUpOffset : player.transform.position.y;
 
-                animState.IsName("HangLoop") ? ledgeDetector.GrabPoint.y - player.hangUpOffset : player.transform.position.y,
-
-                ledgeDetector.GrabPoint.z
-                - (player.transform.forward.z * player.hangForwardOffset)
-                );
+            player.transform.position = newPosition;
         }
     }
 

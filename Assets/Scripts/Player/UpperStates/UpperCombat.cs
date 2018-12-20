@@ -8,6 +8,12 @@ public class UpperCombat : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
+        if (player.Weapons.currentWeapon == null)
+        {
+            player.UpperStateMachine.GoToState<Empty>();
+            return;
+        }
+
         player.Stats.ShowCanvas();
         player.Anim.SetBool("isCombat", true);
         player.Anim.SetBool("isTargetting", true);

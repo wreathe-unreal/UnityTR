@@ -11,6 +11,7 @@ public class Locomotion : StateBase<PlayerController>
     private float speed = 0f;
 
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
+    private LedgeInfo ledgeInfo;
 
     public override void OnEnter(PlayerController player)
     {
@@ -46,18 +47,19 @@ public class Locomotion : StateBase<PlayerController>
         {
             if (animState.IsName("HangLoop"))
             {
-                player.transform.position = ledgeDetector.GrabPoint 
-                    - ledgeDetector.Direction * player.hangForwardOffset
+                player.transform.position = ledgeInfo.Point 
+                    - ledgeInfo.Direction * player.hangForwardOffset
                     - Vector3.up * player.hangUpOffset;
                 player.Anim.ResetTrigger("ToLedgeForward");
+                player.LocalVelocity = Vector3.zero;
                 player.StateMachine.GoToState<Climbing>();
             }
             else if (animState.IsName("LedgeOffFront"))
             {
-                player.Anim.MatchTarget(ledgeDetector.GrabPoint
-                    - ledgeDetector.Direction * player.hangForwardOffset
+                player.Anim.MatchTarget(ledgeInfo.Point
+                    - ledgeInfo.Direction * player.hangForwardOffset
                     - Vector3.up * player.hangUpOffset,
-                Quaternion.LookRotation(ledgeDetector.Direction, Vector3.up),
+                Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up),
                 AvatarTarget.Root,
                 new MatchTargetWeightMask(Vector3.one, 1f),
                 0.2f, 1f);
@@ -68,19 +70,24 @@ public class Locomotion : StateBase<PlayerController>
         if (!player.Grounded && player.Ground.Distance > player.charControl.stepOffset && !isRootMotion)
         {
             player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
+            player.LocalVelocity = Vector3.zero;
             player.StateMachine.GoToState<InAir>();
             return;
         }
         else if (player.Ground.Tag == "Slope" && !isRootMotion)
         {
+            player.LocalVelocity = Vector3.zero;
             player.StateMachine.GoToState<Sliding>();
             return;
         }
         else if (Input.GetKey(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
         {
-            player.StateMachine.GoToState<Combat>();
-            player.UpperStateMachine.GoToState<UpperCombat>();
-            return;
+            if (player.Weapons.currentWeapon != null)
+            {
+                player.StateMachine.GoToState<Combat>();
+                player.UpperStateMachine.GoToState<UpperCombat>();
+                return;
+            }
         }
 
         if (isStairs = (player.Ground.Distance < 1f && player.Ground.Tag == "Stairs"))
@@ -91,7 +98,6 @@ public class Locomotion : StateBase<PlayerController>
                 Vector3.down, out hit, 1f))
             {
                 player.Anim.SetFloat("Stairs", hit.point.y < player.transform.position.y ? -1f : 1f, 0.1f, Time.deltaTime);
-                Debug.Log(player.transform.position.y - hit.point.y);
             }
         }
         else
@@ -116,7 +122,7 @@ public class Locomotion : StateBase<PlayerController>
             Vector3 start = player.transform.position
                 + player.transform.forward * .75f
                 + Vector3.down * 0.1f;
-            if (ledgeDetector.FindLedgeAtPoint(start, -player.transform.forward, .75f, 0.2f))
+            if (ledgeDetector.FindLedgeAtPoint(start, -player.transform.forward, .75f, 0.2f, out ledgeInfo))
             {
                 isTransitioning = true;
                 player.Anim.SetTrigger("ToLedgeForward");
@@ -132,9 +138,10 @@ public class Locomotion : StateBase<PlayerController>
 
         if (Input.GetKeyDown(player.playerInput.jump) && !isRootMotion)
         {
-            if (animState.IsName("RunWalk"))
+            if (animState.IsName("RunWalk") || animState.IsName("IdleToRun"))
                 player.Anim.applyRootMotion = false;
 
+            player.LocalVelocity = Vector3.zero;
             player.StateMachine.GoToState<Jumping>();
         }
     }
@@ -144,11 +151,11 @@ public class Locomotion : StateBase<PlayerController>
         if (Input.GetButtonDown("Jump") && !isRootMotion /*&& player.Anim.GetCurrentAnimatorStateInfo(0).IsName("Idle")*/)
         {
             isRootMotion = ledgeDetector.FindPlatformInfront(player.transform.position,
-                player.transform.forward, 2f);
+                player.transform.forward, 2f, out ledgeInfo);
 
             if (isRootMotion)
             {
-                float height = ledgeDetector.GrabPoint.y - player.transform.position.y;
+                float height = ledgeInfo.Point.y - player.transform.position.y;
 
                 // step can be runned over
                 if (height < player.charControl.stepOffset)
@@ -158,7 +165,7 @@ public class Locomotion : StateBase<PlayerController>
                 } 
                 else
                 {
-                    player.transform.rotation = Quaternion.LookRotation(ledgeDetector.Direction, Vector3.up);
+                    player.transform.rotation = Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up);
                     player.DisableCharControl(); // stops char controller collisions
                 }
 
@@ -189,8 +196,8 @@ public class Locomotion : StateBase<PlayerController>
             waitingBool = false;
             player.Anim.applyRootMotion = true;
 
-            Vector3 targetPos = ledgeDetector.GrabPoint + ledgeDetector.Direction * 0.24f;
-            player.Anim.MatchTarget(targetPos, Quaternion.LookRotation(ledgeDetector.Direction), AvatarTarget.Root,
+            Vector3 targetPos = ledgeInfo.Point + ledgeInfo.Direction * 0.24f;
+            player.Anim.MatchTarget(targetPos, Quaternion.LookRotation(ledgeInfo.Direction), AvatarTarget.Root,
                 new MatchTargetWeightMask(Vector3.one, 1f), 0.1f, 0.9f);
         }
         else if (transInfo.IsName("AnyState -> StepUp_Hlf") || transInfo.IsName("AnyState -> StepUp_Qtr")

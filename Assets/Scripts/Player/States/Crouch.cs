@@ -34,7 +34,7 @@ public class Crouch : StateBase<PlayerController>
     {
         if(!Input.GetKey(player.playerInput.crouch))
         {
-            if (!Physics.Raycast(player.transform.position, Vector3.up, 1.8f))
+            if (!Physics.Raycast(player.transform.position, Vector3.up, 1.8f, ~(1 << 8), QueryTriggerInteraction.Ignore))
             {
                 player.StateMachine.GoToState<Locomotion>();
                 return;

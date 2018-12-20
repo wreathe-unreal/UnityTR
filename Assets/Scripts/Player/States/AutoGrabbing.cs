@@ -11,35 +11,56 @@ public class AutoGrabbing : StateBase<PlayerController>
     private Vector3 startPosition;
     private Quaternion targetRot;
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
+    private LedgeInfo ledgeInfo;
+
+    public override void ReceiveContext(object context)
+    {
+        if (!(context is LedgeInfo))
+            return;
+
+        ledgeInfo = (LedgeInfo)context;
+    }
 
     public override void OnEnter(PlayerController player)
     {
+        if (ledgeInfo == null)
+        {
+            Debug.LogError("Autograbbing has no ledge info... you need to pass ledge info as context... going to in air");
+            player.StateMachine.GoToState<InAir>();
+            return;
+        }
+
         player.MinimizeCollider();
 
         player.Anim.SetBool("isAutoGrabbing", true);
         player.ForceHeadLook = true;
 
-        grabPoint = new Vector3(ledgeDetector.GrabPoint.x - (player.transform.forward.x * player.grabForwardOffset),
-                        ledgeDetector.GrabPoint.y - player.grabUpOffset,
-                        ledgeDetector.GrabPoint.z - (player.transform.forward.z * player.grabForwardOffset));
+        grabPoint = ledgeInfo.Point - player.transform.forward * player.hangForwardOffset;
+        grabPoint.y = ledgeInfo.Point.y - player.hangUpOffset;
 
-        Vector3 calcGrabPoint = ledgeDetector.GrabPoint - player.transform.forward * 0f
-            - 1.8f * Vector3.up;
+        Vector3 calcGrabPoint;
 
-        targetRot = Quaternion.LookRotation(ledgeDetector.Direction); 
+        if (ledgeInfo.Type == LedgeType.Monkey || ledgeInfo.Type == LedgeType.HorPole)
+        {
+            calcGrabPoint = grabPoint - Vector3.up * 0.14f;
+            targetRot = player.transform.rotation;
+        }
+        else
+        {
+            calcGrabPoint = ledgeInfo.Point + player.grabUpOffset * Vector3.down - ledgeInfo.Direction * player.grabForwardOffset;
+            targetRot = Quaternion.LookRotation(ledgeInfo.Direction);
+        }
 
         startPosition = player.transform.position;
 
-        float curSpeed = UMath.GetHorizontalMag(player.Velocity);
-
         player.Velocity = UMath.VelocityToReachPoint(player.transform.position,
-            calcGrabPoint,
-            UMath.GetHorizontalMag(player.Velocity) > 1f ? player.JumpZVel : player.StandJumpZVel,
-            player.gravity,
-            out grabTime);
+                            calcGrabPoint,
+                            player.JumpZVel,
+                            player.gravity,
+                            out grabTime);
 
         // So Lara doesn't do huge upwards jumps or snap when close
-        if (grabTime < 0.4f || grabTime > 1.2f)
+        if (grabTime < 0.3f || grabTime > 1.2f)
         {
             grabTime = Mathf.Clamp(grabTime, 0.4f, 1.2f);
 
@@ -48,8 +69,6 @@ public class AutoGrabbing : StateBase<PlayerController>
                                 player.gravity,
                                 grabTime);
         }
-
-        Debug.LogWarning("CALC BEL: " + player.Velocity);
 
         timeTracker = Time.time;
     }
@@ -60,27 +79,43 @@ public class AutoGrabbing : StateBase<PlayerController>
 
         player.Anim.SetBool("isAutoGrabbing", false);
         player.ForceHeadLook = false;
+
+        ledgeInfo = null;
     }
 
     public override void Update(PlayerController player)
     {
         player.ApplyGravity(player.gravity);
 
-        player.HeadLookAt = ledgeDetector.GrabPoint;
+        player.HeadLookAt = ledgeInfo.Point;
 
         if (Time.time - timeTracker >= grabTime)
         {
-            player.Anim.SetTrigger("Grab");
+            if (UMath.GetHorizontalMag(player.Velocity) > 1f)
+                player.Anim.SetTrigger(HasFeetRoom() ? "DeepGrab" : "Grab");
+            else
+                player.Anim.SetTrigger("StandGrab");
 
             player.transform.position = grabPoint;
             player.transform.rotation = targetRot;
 
-            if (ledgeDetector.WallType == LedgeType.Free)
+            if (ledgeInfo.Type == LedgeType.Free)
                 player.StateMachine.GoToState<Freeclimb>();
+            else if (ledgeInfo.Type == LedgeType.Monkey)
+                player.StateMachine.GoToState<MonkeySwing>();
             else
                 player.StateMachine.GoToState<Climbing>();
         }
+    }
 
-        Debug.Log("Player vel: " + player.Velocity);
+    public bool HasFeetRoom()
+    {
+        if (Physics.Raycast(grabPoint, ledgeInfo.Direction, 1f))
+            return false;
+
+        if (Physics.Raycast(grabPoint + Vector3.up * 1f, ledgeInfo.Direction, 1f))
+            return false;
+
+        return true;
     }
 }

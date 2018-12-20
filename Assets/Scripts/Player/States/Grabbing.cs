@@ -6,7 +6,6 @@ using UnityEngine;
 
 class Grabbing : StateBase<PlayerController>
 {
-
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
     private Vector3 grabPoint;
     private Vector3 lastPos;
@@ -42,6 +41,11 @@ class Grabbing : StateBase<PlayerController>
             return;
         }
 
+        CheckForLedges(player, animState);
+    }
+
+    private void CheckForLedges(PlayerController player, AnimatorStateInfo animState)
+    {
         RaycastHit hit;
         Vector3 startPos = new Vector3(player.transform.position.x,
             player.transform.position.y + (animState.IsName("Reach") ? player.grabUpOffset : 1.975f),
@@ -50,23 +54,20 @@ class Grabbing : StateBase<PlayerController>
         // If Lara's position changes too fast, can miss ledges
         float deltaH = Mathf.Max(Mathf.Abs(player.transform.position.y - lastPos.y), 0.12f);
 
+        LedgeInfo ledgeInfo;
         // Checks if there is a ledge to grab
-        if (ledgeDetector.FindLedgeAtPoint(startPos,
-        player.transform.forward,
-        0.25f,
-        deltaH))
+        if (ledgeDetector.FindLedgeAtPoint(startPos, player.transform.forward, 0.25f, deltaH, out ledgeInfo))
         {
-            grabPoint = new Vector3(ledgeDetector.GrabPoint.x - (player.transform.forward.x * player.grabForwardOffset),
-                ledgeDetector.GrabPoint.y - (!animState.IsName("JumpUp") && !animState.IsName("Fall2") ? player.grabUpOffset : player.hangUpOffset),
-                ledgeDetector.GrabPoint.z - (player.transform.forward.z * player.grabForwardOffset));
+            grabPoint = ledgeInfo.Point - player.transform.forward * player.hangForwardOffset;
+            grabPoint.y = ledgeInfo.Point.y - player.hangUpOffset;
 
             player.transform.position = grabPoint;
-            Quaternion ledgeRot = Quaternion.LookRotation(ledgeDetector.Direction, Vector3.up);
+            Quaternion ledgeRot = Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up);
             player.transform.rotation = Quaternion.Euler(0f, ledgeRot.eulerAngles.y, 0f);
 
             player.Anim.SetTrigger("Grab");
 
-            if (ledgeDetector.WallType == LedgeType.Free)
+            if (ledgeInfo.Type == LedgeType.Free)
                 player.StateMachine.GoToState<Freeclimb>();
             else
                 player.StateMachine.GoToState<Climbing>();
