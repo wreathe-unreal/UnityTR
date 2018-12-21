@@ -10,13 +10,38 @@ public class CombatJumping : StateBase<PlayerController>
     {
         player.Anim.SetBool("isCombatJumping", true);
         hasJumped = false;
+        DecideJumpDirection(player);
+    }
 
-        float absAngle = Mathf.Abs(player.CombatAngle);
+    private static void DecideJumpDirection(PlayerController player)
+    {
+        Vector3 camForward = player.Cam.forward;
+        camForward.y = 0f;
+        camForward.Normalize();
 
-        player.transform.rotation = absAngle > 45f && absAngle < 135f ?
-            Quaternion.LookRotation(Vector3.Cross(player.transform.forward, Vector3.up))
-            : Quaternion.LookRotation((absAngle <= 45f ? 1f : -1f) * 
-            Vector3.Scale(new Vector3(1f, 0f, 1f), player.Velocity.normalized));
+        Vector3 targetDirection = player.RawTargetVector(1f, true);
+        float jumpDirection = Vector3.SignedAngle(camForward, targetDirection, Vector3.up);
+
+        if (Mathf.Abs(jumpDirection) < 45f)
+        {
+            player.transform.rotation = Quaternion.LookRotation(targetDirection);
+            player.Anim.SetTrigger("ForwardJump");
+        }
+        else if (jumpDirection >= 45f && jumpDirection < 135f)
+        {
+            player.transform.rotation = Quaternion.LookRotation(Vector3.Cross(targetDirection, Vector3.up));
+            player.Anim.SetTrigger("RightJump");
+        }
+        else if (jumpDirection <= -45f && jumpDirection > -135f)
+        {
+            player.transform.rotation = Quaternion.LookRotation(Vector3.Cross(-targetDirection, Vector3.up));
+            player.Anim.SetTrigger("LeftJump");
+        }
+        else
+        {
+            player.transform.rotation = Quaternion.LookRotation(-targetDirection);
+            player.Anim.SetTrigger("BackJump");
+        }
     }
 
     public override void OnExit(PlayerController player)

@@ -7,7 +7,7 @@ public class Dead : StateBase<PlayerController>
 {
     private bool ragged = false;
     private float timeCounter = 0f;
-    private float timeToWait = 2f;
+    private float timeToWait = 1.6f;
 
     private Vector3 hitVelocity;
 

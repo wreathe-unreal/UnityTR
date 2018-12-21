@@ -55,7 +55,7 @@ public class AutoGrabbing : StateBase<PlayerController>
 
         player.Velocity = UMath.VelocityToReachPoint(player.transform.position,
                             calcGrabPoint,
-                            player.JumpZVel,
+                            player.runJumpVel,
                             player.gravity,
                             out grabTime);
 

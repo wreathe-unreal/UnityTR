@@ -17,19 +17,29 @@ public class Locomotion : StateBase<PlayerController>
     {
         player.camController.State = CameraState.Grounded;
         player.camController.LAUTurning = true;
+
         player.EnableCharControl();
+        player.ConsiderStepOffset = true;
+
         player.Anim.SetBool("isJumping", false);
         player.Anim.SetBool("isLocomotion", true);
+        player.Anim.SetFloat("YSpeed", 0f);
         player.Anim.applyRootMotion = true;
+
         player.IsFootIK = true;
+
         isTransitioning = false;
         isRootMotion = false;
     }
 
     public override void OnExit(PlayerController player)
     {
+        player.ConsiderStepOffset = false;
+
         player.camController.LAUTurning = false;
+
         player.Anim.SetBool("isLocomotion", false);
+
         player.IsFootIK = false;
     }
 
@@ -45,7 +55,7 @@ public class Locomotion : StateBase<PlayerController>
 
         if (isTransitioning)
         {
-            if (animState.IsName("HangLoop"))
+            if (animState.IsName("HangLoop") || animState.IsName("Grab"))
             {
                 player.transform.position = ledgeInfo.Point 
                     - ledgeInfo.Direction * player.hangForwardOffset
@@ -54,7 +64,7 @@ public class Locomotion : StateBase<PlayerController>
                 player.LocalVelocity = Vector3.zero;
                 player.StateMachine.GoToState<Climbing>();
             }
-            else if (animState.IsName("LedgeOffFront"))
+            else if (animState.IsName("LedgeOffFront") || animState.IsName("LastChanceGrab"))
             {
                 player.Anim.MatchTarget(ledgeInfo.Point
                     - ledgeInfo.Direction * player.hangForwardOffset
@@ -69,9 +79,19 @@ public class Locomotion : StateBase<PlayerController>
 
         if (!player.Grounded && player.Ground.Distance > player.charControl.stepOffset && !isRootMotion)
         {
-            player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
-            player.LocalVelocity = Vector3.zero;
-            player.StateMachine.GoToState<InAir>();
+            // Check if there is a ledge to grab as a last chance
+            if (ledgeDetector.FindLedgeAtPoint(player.transform.position, -player.transform.forward, 0.5f, 1f, out ledgeInfo) && ledgeInfo.HangRoom)
+            {
+                player.DisableCharControl();
+                player.Anim.SetTrigger("LastChance");
+                isTransitioning = true;
+            }
+            else
+            {
+                player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
+                player.LocalVelocity = Vector3.zero;
+                player.StateMachine.GoToState<InAir>();
+            }
             return;
         }
         else if (player.Ground.Tag == "Slope" && !isRootMotion)

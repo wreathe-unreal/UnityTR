@@ -36,7 +36,9 @@ public class Jumping : StateBase<PlayerController>
         float targetSpeed = UMath.GetHorizontalMag(player.RawTargetVector());
         player.Anim.SetFloat("TargetSpeed", targetSpeed);
 
-        if (!player.autoLedgeTarget && Input.GetKey(player.playerInput.action))
+        bool isDive = player.Anim.GetBool("isDive");
+
+        if (!player.autoLedgeTarget && Input.GetKey(player.playerInput.action) && !isDive)
         {
             isGrabbing = true;
         }
@@ -44,11 +46,17 @@ public class Jumping : StateBase<PlayerController>
         // Allows player to smoothly turn round during stand jump
         if ((animState.IsName("Still_Compress_Forward") || animState.IsName("Compress")) && targetSpeed > 0.5f && !hasJumped)
         {
-            player.MoveGrounded(targetSpeed);
+            player.MoveGrounded(targetSpeed, false);
             player.RotateToVelocityGround();
         }
 
-        bool isRunJump = animState.IsName("RunJump") || animState.IsName("RunJumpM");
+        if (Input.GetKey(player.playerInput.crouch) && !hasJumped)
+        {
+            player.Anim.SetBool("isDive", true);
+            isDive = true;
+        }
+
+        bool isRunJump = animState.IsName("RunJump") || animState.IsName("RunJumpM") || animState.IsName("Dive");
         bool isStandJump = animState.IsName("StandJump") || transInfo.IsName("Still_Compress_Forward -> StandJump");
         bool isJumpUp = animState.IsName("JumpUp");
 
@@ -56,9 +64,9 @@ public class Jumping : StateBase<PlayerController>
         {
             player.Anim.applyRootMotion = false;
 
-            float zVel = isRunJump ? player.JumpZVel
-                    : isStandJump ? player.StandJumpZVel
-                    : 0.1f;
+            float zVel = isRunJump ? player.runJumpVel
+                : isStandJump ? player.standJumpVel
+                : 0.1f;
             float yVel = player.JumpYVel;
 
             // Snaps stand forward jump to right direction
@@ -68,7 +76,7 @@ public class Jumping : StateBase<PlayerController>
                 player.transform.rotation = rotationTarget;
             }
 
-            if (player.autoLedgeTarget)
+            if (player.autoLedgeTarget && !isDive)
             {
                 ledgesDetected = ledgeDetector.FindLedgeJump(player.transform.position + Vector3.down * 2.5f,
                     player.transform.forward, 6.2f, 2.5f + player.jumpHeight + player.grabUpOffset, out ledgeInfo);

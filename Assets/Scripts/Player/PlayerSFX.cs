@@ -19,6 +19,8 @@ public class PlayerSFX : MonoBehaviour
     public AudioClip[] slapSounds;
     public AudioClip[] hitGroundSounds;
     public AudioClip[] deathSounds;
+    public AudioClip[] whooshSounds;
+    public AudioClip[] ladderSounds;
 
     private void Start()
     {
@@ -30,14 +32,24 @@ public class PlayerSFX : MonoBehaviour
         PlayRandomSound(feetSounds, Random.Range(footMinVol, footMaxVol));
     }
 
+    public void PlayLadderSounds()
+    {
+        PlayRandomSound(ladderSounds, 0.1f);
+    }
+
     public void PlayJumpSound()
     {
-        PlayRandomSound(jumpSounds, 1);
+        PlayRandomSound(jumpSounds, 0.6f);
+    }
+
+    public void PlayWhooshSound()
+    {
+        PlayRandomSound(whooshSounds, 0.1f);
     }
 
     public void PlayGrabSound()
     {
-        PlayRandomSound(grabSounds, 1);
+        PlayRandomSound(grabSounds, 0.6f);
     }
 
     public void PlayHitGroundSound()
@@ -47,17 +59,17 @@ public class PlayerSFX : MonoBehaviour
 
     public void PlayVaultSound()
     {
-        PlayRandomSound(vaultSounds, 1);
+        PlayRandomSound(vaultSounds, 0.6f);
     }
 
     public void PlayScreamSound()
     {
-        PlayRandomSound(screamSounds, 1);
+        PlayRandomSound(screamSounds, 0.8f);
     }
 
     public void PlaySlapSounds()
     {
-        PlayRandomSound(slapSounds, 0.25f);
+        PlayRandomSound(slapSounds, 0.1f);
     }
 
     public void PlayDeathSounds()

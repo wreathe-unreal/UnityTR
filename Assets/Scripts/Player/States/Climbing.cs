@@ -47,7 +47,7 @@ public class Climbing : StateBase<PlayerController>
 
         player.Anim.SetFloat("Right", right);
 
-        if (Input.GetKey(player.playerInput.crouch) && !isClimbingUp)
+        if (Input.GetKeyDown(player.playerInput.crouch) && !isClimbingUp)
         {
             LetGo(player);
             return;

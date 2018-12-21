@@ -14,7 +14,9 @@ public class InAir : StateBase<PlayerController>
     public override void OnEnter(PlayerController player)
     {
         player.camController.State = CameraState.Grounded;
+
         player.Anim.applyRootMotion = false;
+
         screamed = false;
 
         player.Anim.SetBool("isAir", true);
@@ -61,7 +63,7 @@ public class InAir : StateBase<PlayerController>
                 }
                 else
                 {
-                    player.Anim.SetTrigger("HardLand");
+                    player.Anim.SetTrigger(animState.IsName("Dive") ? "DiveLand" : "HardLand");
 
                     // Stops player moving forward on landing
                     if (Input.GetAxisRaw(player.playerInput.verticalAxis) < 0.1f && Input.GetAxisRaw(player.playerInput.horizontalAxis) < 0.1f)
@@ -76,7 +78,7 @@ public class InAir : StateBase<PlayerController>
             }
             else
             {
-                player.Anim.SetTrigger("Land");
+                player.Anim.SetTrigger(animState.IsName("Dive") ? "DiveLand" : "Land");
 
                 // Stops player moving forward on landing
                 if (Input.GetAxisRaw(player.playerInput.verticalAxis) < 0.1f && Input.GetAxisRaw(player.playerInput.horizontalAxis) < 0.1f)

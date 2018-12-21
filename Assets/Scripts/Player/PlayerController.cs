@@ -23,7 +23,8 @@ public class PlayerController : MonoBehaviour
     public float deathHeight = 12f;
     [Header("Jump Settings")]
     public float jumpHeight = 1.2f;
-    public float jumpZBoost = 0.8f;
+    public float runJumpVel = 4.5f;
+    public float standJumpVel = 3.5f;
     [Header("IK Settings")]
     public float footYOffset = 0.1f;
     [Header("Offsets")]
@@ -40,13 +41,12 @@ public class PlayerController : MonoBehaviour
     public Rigidbody[] ragRigidBodies;
 
     private bool isGrounded = true;
+    private bool considerStepOffset = false;
     private bool isFootIK = false;
     private bool holdRotation = false;
     private bool forceWaistRotation = false;
     private bool forceHeadLook = false;
     private float jumpYVel = 0f;
-    private float jumpZVel = 0f;
-    private float standJumpZVel = 0f;
     private float damageVelocity = 0f;
     private float deathVelocity = 0f;
     private float combatAngle = 0f;
@@ -79,9 +79,6 @@ public class PlayerController : MonoBehaviour
 
         // Calc jump speeds - v^2 = u^2 + 2as
         jumpYVel = Mathf.Sqrt(2f * jumpHeight * gravity);
-
-        jumpZVel = runSpeed + jumpZBoost;  // u = s/t
-        standJumpZVel = walkSpeed + jumpZBoost;
 
         damageVelocity = Mathf.Sqrt(2 * gravity * damageHeight);
         deathVelocity = Mathf.Sqrt(2 * gravity * deathHeight);
@@ -149,7 +146,7 @@ public class PlayerController : MonoBehaviour
 
         UpdateAnimator();
 
-        //SlideOffSlopeLimit();
+        SlideOffSlopeLimit();
 
         if (charControl.enabled)
             charControl.Move((anim.applyRootMotion ? Vector3.Scale(velocity, Vector3.up) : velocity) * Time.deltaTime);
@@ -157,7 +154,7 @@ public class PlayerController : MonoBehaviour
 
     private void SlideOffSlopeLimit()
     {
-        if (groundInfo.Angle > charControl.slopeLimit && groundInfo.Tag != "Slope")
+        if (groundInfo.Angle > charControl.slopeLimit && velocity.y < 0f && groundInfo.Tag != "Slope")
         {
             // Test if we are on sharp edge or not
             RaycastHit testHit;
@@ -174,8 +171,7 @@ public class PlayerController : MonoBehaviour
 
             Quaternion rotater = Quaternion.FromToRotation(velocity.normalized, slopeDirection);
 
-            velocity = rotater * velocity;
-            velocity.y = -gravity;
+            velocity = Vector3.Project(velocity, slopeDirection);
         }
     }
 
@@ -192,8 +188,7 @@ public class PlayerController : MonoBehaviour
 
         Vector3 sphereStart = transform.position + Vector3.up * charControl.radius;
 
-        if (Physics.SphereCast(sphereStart, charControl.radius, Vector3.down, out groundHit, charControl.skinWidth + 0.1f)
-            && !groundHit.collider.CompareTag("Water"))
+        if (Physics.SphereCast(sphereStart, charControl.radius, Vector3.down, out groundHit, charControl.skinWidth + 0.1f, ~(1 << 8), QueryTriggerInteraction.Ignore))
         {
             isGrounded = true;
             groundInfo.Distance = transform.position.y - groundHit.point.y;
@@ -201,8 +196,12 @@ public class PlayerController : MonoBehaviour
             groundInfo.Tag = groundHit.collider.tag;
             groundInfo.Normal = groundHit.normal;
         }
+        else if (charControl.isGrounded)
+        {
+            isGrounded = true;
+        }
 
-        if (isGrounded)
+        if (true)
         {
             float castDist = charControl.stepOffset + charControl.skinWidth + charControl.radius;
 
@@ -223,7 +222,10 @@ public class PlayerController : MonoBehaviour
                 groundInfo.Normal = groundHit.normal;
             }
 
-            if (groundInfo.Angle > charControl.slopeLimit)
+            if (considerStepOffset && groundInfo.Distance < charControl.stepOffset)
+                isGrounded = true;
+
+            if (groundInfo.Angle > charControl.slopeLimit && groundInfo.Tag != "Slope")
                 isGrounded = false;
         }
 
@@ -618,6 +620,12 @@ public class PlayerController : MonoBehaviour
         get { return isGrounded; }
     }
 
+    public bool ConsiderStepOffset
+    {
+        get { return considerStepOffset; }
+        set { considerStepOffset = value; }
+    }
+
     public bool IsFootIK
     {
         get { return isFootIK; }
@@ -639,16 +647,6 @@ public class PlayerController : MonoBehaviour
     public float JumpYVel
     {
         get { return jumpYVel; }
-    }
-
-    public float JumpZVel
-    {
-        get { return jumpZVel; }
-    }
-
-    public float StandJumpZVel
-    {
-        get { return standJumpZVel; }
     }
 
     public float DamageVelocity
