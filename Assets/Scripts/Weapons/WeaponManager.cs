@@ -40,12 +40,20 @@ public class WeaponManager : MonoBehaviour
 
     public void FireRWeapon()
     {
-        currentWeapon.rHand.Fire(target.position + Vector3.up * 1f);
+        currentWeapon.rHand.Fire(GetTargetPosition());
     }
 
     public void FireLWeapon()
     {
-        currentWeapon.lHand.Fire(target.position + Vector3.up * 1f);
+        currentWeapon.lHand.Fire(GetTargetPosition());
+    }
+
+    private Vector3 GetTargetPosition()
+    {
+        if (target != null)
+            return target.position + Vector3.up * 1f;
+        else
+            return currentWeapon.rHand.transform.position + currentWeapon.rHand.transform.forward * 10f;
     }
 
     public void HoldingCurrentWeapon(bool state)

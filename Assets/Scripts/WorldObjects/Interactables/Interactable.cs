@@ -19,6 +19,6 @@ public class Interactable : MonoBehaviour
 
     public virtual void Interact(PlayerController player)
     {
-        // Default does nothing :O
+        // May be used for things like showing hand icon
     }
 }

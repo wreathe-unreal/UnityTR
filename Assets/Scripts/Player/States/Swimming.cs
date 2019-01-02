@@ -7,6 +7,7 @@ public class Swimming : StateBase<PlayerController>
     private bool isEntering = false;
     private bool isTreading = false;
     private bool isClimbingUp = false;
+    private float decelRate = 0f;
 
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
 
@@ -18,7 +19,9 @@ public class Swimming : StateBase<PlayerController>
         isEntering = true;
         isClimbingUp = false;
         player.camController.PivotOnTarget();
-        player.Velocity.Scale(Vector3.up);
+        player.Velocity = new Vector3(0f, Mathf.Max(player.Velocity.y, -10f));
+        decelRate = player.Velocity.y / 0.5f;
+        player.Anim.SetFloat("Speed", 0f);
     }
 
     public override void OnExit(PlayerController player)
@@ -39,7 +42,7 @@ public class Swimming : StateBase<PlayerController>
         if (isEntering)
         {
             if (player.Velocity.y < 0f)
-                player.ApplyGravity(-player.gravity);
+                player.ApplyGravity(decelRate);
             else
                 isEntering = false;
 
@@ -87,27 +90,33 @@ public class Swimming : StateBase<PlayerController>
             player.RotateToVelocityGround();
 
             CheckForClimbOut(player);
+
+            if (Input.GetKey(player.playerInput.crouch))
+            {
+                GoToSwim(player);
+            }
         }
     }
 
     private void CheckForClimbOut(PlayerController player)
     {
-        if (Input.GetKeyDown(player.playerInput.action))
+        if (/*Input.GetKeyDown(player.playerInput.jump)*/true)
         {
             LedgeInfo ledgeInfo;
             if (ledgeDetector.FindLedgeAtPoint(
                 player.transform.position + Vector3.up * player.charControl.height,
-                player.transform.forward,
-                0.4f,
-                0.2f, out ledgeInfo))
+                player.transform.forward, player.charControl.radius + 0.1f, 0.2f, out ledgeInfo))
             {
                 player.Anim.SetTrigger("ClimbOut");
                 isClimbingUp = true;
-                player.Anim.applyRootMotion = true;
+
+                player.Anim.applyRootMotion = false;
+
                 player.camController.PivotOnPivot();
+
                 player.transform.position = ledgeInfo.Point
-                    - (ledgeInfo.Direction * 0.56f)
-                    - Vector3.up * 1.82f;
+                    - (ledgeInfo.Direction * 0.54f)
+                    - Vector3.up * 1.9f;
                 player.transform.rotation = Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up);
             }
         }
@@ -127,5 +136,12 @@ public class Swimming : StateBase<PlayerController>
                 player.transform.rotation = Quaternion.Euler(0f, player.transform.rotation.y, 0f);
             }
         }
+    }
+
+    private void GoToSwim(PlayerController player)
+    {
+        isTreading = false;
+        player.Anim.SetBool("isTreading", false);
+        player.camController.PivotOnTarget();
     }
 }

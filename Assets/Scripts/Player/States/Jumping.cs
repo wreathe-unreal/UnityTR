@@ -11,6 +11,7 @@ public class Jumping : StateBase<PlayerController>
     private bool hasJumped = false;
     private bool ledgesDetected = false;
     private bool isGrabbing = false;
+    private bool noRotate = false;
 
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
 
@@ -20,8 +21,22 @@ public class Jumping : StateBase<PlayerController>
         player.Anim.SetBool("isJumping", true);
     }
 
+    public override void ReceiveContext(object context)
+    {
+        if (context is string)
+        {
+            string msg = (string)context;
+
+            if (msg.Equals("Slide"))
+            {
+                noRotate = true;
+            }
+        }
+    }
+
     public override void OnExit(PlayerController player)
     {
+        noRotate = false;
         hasJumped = false;
         isGrabbing = false;
         ledgesDetected = false;
@@ -44,7 +59,7 @@ public class Jumping : StateBase<PlayerController>
         }
 
         // Allows player to smoothly turn round during stand jump
-        if ((animState.IsName("Still_Compress_Forward") || animState.IsName("Compress")) && targetSpeed > 0.5f && !hasJumped)
+        if ((animState.IsName("Still_Compress_Forward") || animState.IsName("Compress")) && !noRotate && !hasJumped)
         {
             player.MoveGrounded(targetSpeed, false);
             player.RotateToVelocityGround();
@@ -70,7 +85,7 @@ public class Jumping : StateBase<PlayerController>
             float yVel = player.JumpYVel;
 
             // Snaps stand forward jump to right direction
-            if (isStandJump)
+            if (isStandJump && !noRotate)
             {
                 Quaternion rotationTarget = Quaternion.LookRotation(player.RawTargetVector(1f, true), Vector3.up);
                 player.transform.rotation = rotationTarget;
@@ -81,40 +96,22 @@ public class Jumping : StateBase<PlayerController>
                 ledgesDetected = ledgeDetector.FindLedgeJump(player.transform.position + Vector3.down * 2.5f,
                     player.transform.forward, 6.2f, 2.5f + player.jumpHeight + player.grabUpOffset, out ledgeInfo);
 
-                // Check for monkeys and poles
-                if (!ledgesDetected)
+                if (ledgesDetected && TrySetVelocity(player, zVel, ref yVel))
                 {
+                    return;
+                }
+                else
+                {
+                    // Check for monkeys and poles
                     Vector3 start = player.transform.position + Vector3.up * player.charControl.height;
                     Vector3 dir = isJumpUp ? Vector3.up : player.transform.forward + Vector3.up;
                     ledgesDetected = ledgeDetector.FindAboveHead(start, dir, 4f, out ledgeInfo);
-                }
-            }
 
-            if (ledgesDetected)
-            {
-                // Need to check where player will be relative to ledge
-                float timeAtPeak = yVel / player.gravity;  // v = u + at
-                Vector3 relative = ledgeInfo.Point - player.transform.position;
-                float displacement = UMath.GetHorizontalMag(relative);
-                // Maximum to account for when player hits wall but keeps moving up
-                float timeAtLedge = Mathf.Max(UMath.TimeAtHorizontalPoint(zVel, displacement), timeAtPeak);
-                float vertPos = UMath.PredictDisplacement(yVel, timeAtLedge, -player.gravity);
-
-                if (vertPos < relative.y - 2.6f) // wont make it
-                {
-                    ledgesDetected = false;
-                }
-                else if (vertPos <= relative.y - 0.8f) // Distance is great, do auto-grab
-                {
-                    player.StateMachine.GoToState<AutoGrabbing>(ledgeInfo);
-                    return;
-                }
-                else if (vertPos < relative.y) // she hits it around the hip just adjust up velocity to clear it
-                {
-                    float time;
-                    Vector3 adjustedVel = UMath.VelocityToReachPoint(player.transform.position,
-                        ledgeInfo.Point, zVel, player.gravity, out time);
-                    yVel = adjustedVel.y;
+                    if (ledgesDetected)
+                    {
+                        player.StateMachine.GoToState<AutoGrabbing>(ledgeInfo);
+                        return;
+                    }
                 }
             }
 
@@ -135,5 +132,31 @@ public class Jumping : StateBase<PlayerController>
                 return;
             }
         }
+    }
+
+    private bool TrySetVelocity(PlayerController player, float zVel, ref float yVel, bool canClear = true)
+    {
+        // Need to check where player will be relative to ledge
+        float timeAtPeak = yVel / player.gravity;  // v = u + at
+        Vector3 relative = ledgeInfo.Point - player.transform.position;
+        float displacement = UMath.GetHorizontalMag(relative);
+        // Maximum to account for when player hits wall but keeps moving up
+        float timeAtLedge = Mathf.Max(UMath.TimeAtHorizontalPoint(zVel, displacement), timeAtPeak);
+        float vertPos = UMath.PredictDisplacement(yVel, timeAtLedge, -player.gravity);
+
+        if (vertPos >= relative.y - 2.6f && vertPos <= relative.y - 0.8f) // Distance is great, do auto-grab
+        {
+            player.StateMachine.GoToState<AutoGrabbing>(ledgeInfo);
+            return true;
+        }
+        else if (canClear && vertPos < relative.y && vertPos > relative.y - 0.8f) // she hits it around the hip just adjust up velocity to clear it
+        {
+            float time;
+            Vector3 adjustedVel = UMath.VelocityToReachPoint(player.transform.position,
+                ledgeInfo.Point, zVel, player.gravity, out time);
+            yVel = adjustedVel.y;
+        }
+
+        return false;
     }
 }

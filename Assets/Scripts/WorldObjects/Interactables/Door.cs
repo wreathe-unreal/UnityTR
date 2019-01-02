@@ -7,6 +7,9 @@ public class Door : Interactable
     public bool openLeft = true;
     public bool pull = true;
 
+    [SerializeField]
+    KeyItem key;
+
     public override void Interact(PlayerController player)
     {
         base.Interact(player);
@@ -14,14 +17,14 @@ public class Door : Interactable
         StartCoroutine(OpenDoor(player));
     }
 
-    private IEnumerator OpenDoor(PlayerController player)
+    public IEnumerator OpenDoor(PlayerController player)
     {
-        player.MoveWait(transform.position - transform.right * (pull ? 1f : 0.75f) - transform.forward * 0.4f, 
+        player.MoveWait(transform.position - transform.right * (pull ? 1f : 0.75f) - transform.forward * 0.4f,
             Quaternion.LookRotation(transform.forward),
             7f, 16f);
 
         player.Anim.SetTrigger(pull ? "PullDoorLeft" : "PushDoorLeft");
-        GetComponent<Animator>().Play(pull ? "PullOnLeft" : "Push");
+        PlayDoorOpen();
 
         while (player.isMovingAuto)
         {
@@ -39,5 +42,10 @@ public class Door : Interactable
 
         player.Anim.applyRootMotion = false;
         GetComponent<BoxCollider>().enabled = false;
+    }
+
+    public void PlayDoorOpen()
+    {
+        GetComponent<Animator>().Play(pull ? "PullOnLeft" : "Push");
     }
 }

@@ -6,7 +6,7 @@ public class PlayerBulletHandler : BulletHandler
 {
     private PlayerController player;
 
-	protected override void Start()
+	private void Start()
     {
         player = GetComponent<PlayerController>();
 	}

@@ -19,13 +19,7 @@ public class Sliding : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (Input.GetKeyDown(player.playerInput.jump))
-        {
-            player.RotateToVelocityGround(); // Stops player doing side jumps
-            player.StateMachine.GoToState<Jumping>();
-            return;
-        }
-        else if (player.Ground.Tag != "Slope")
+        if (player.Ground.Tag != "Slope")
         {
             if (player.Grounded)
             {
@@ -52,8 +46,16 @@ public class Sliding : StateBase<PlayerController>
         player.Velocity.Scale(new Vector3(1f, 0f, 1f));  // Ensures correct gravity can be applied
         player.Velocity += Vector3.down * player.gravity;
 
-        Debug.Log(player.Velocity);
+        player.RotateToVelocityGround();
 
-        player.RotateToVelocityGround(14f);
+        HandleJump(player);
+    }
+
+    private void HandleJump(PlayerController player)
+    {
+        if (Input.GetKeyDown(player.playerInput.jump))
+        {
+            player.StateMachine.GoToState<Jumping>("Slide");
+        }
     }
 }

@@ -44,14 +44,7 @@ public class Climbing : StateBase<PlayerController>
         AnimatorTransitionInfo transInfo = player.Anim.GetAnimatorTransitionInfo(0);
 
         right = Input.GetAxisRaw(player.playerInput.horizontalAxis);
-
         player.Anim.SetFloat("Right", right);
-
-        if (Input.GetKeyDown(player.playerInput.crouch) && !isClimbingUp)
-        {
-            LetGo(player);
-            return;
-        }
 
         if (isInCornering || isOutCornering)
         {
@@ -72,9 +65,6 @@ public class Climbing : StateBase<PlayerController>
         }
         else if (isClimbingUp)
         {
-            player.Anim.SetFloat("Speed", 0f);
-            player.Anim.SetFloat("TargetSpeed", 0f);
-
             if (animState.IsName("Idle") || transInfo.IsName("ClimbUp -> Idle"))
             {
                 player.StateMachine.GoToState<Locomotion>();
@@ -83,15 +73,21 @@ public class Climbing : StateBase<PlayerController>
             return;
         }
 
-        RaycastHit hit;
-        if (Physics.Raycast(player.transform.position, player.transform.forward, out hit, 0.5f))
+        if (Input.GetKeyDown(player.playerInput.crouch))
         {
-            player.Anim.SetBool("isFeetRoom", true);
+            LetGo(player);
+            return;
+        }
 
-            if (hit.collider.CompareTag("Freeclimb"))
+        // Adjustment for moving platforms
+        RaycastHit hit;
+        if (Physics.Raycast(player.transform.position + Vector3.up * (player.hangUpOffset - 0.1f), player.transform.forward, out hit, 1f, ~(1 << 8), QueryTriggerInteraction.Ignore))
+        {
+            if (hit.collider.CompareTag("MovingPlatform"))
             {
-                player.StateMachine.GoToState<Freeclimb>();
-                return;
+                MovingPlatform moving = hit.collider.GetComponent<MovingPlatform>();
+
+                moving.AttachTransform(player.transform);
             }
         }
 
@@ -185,6 +181,9 @@ public class Climbing : StateBase<PlayerController>
     {
         player.camController.State = CameraState.Grounded;
 
+        player.Anim.SetFloat("Speed", 0f);
+        player.Anim.SetFloat("TargetSpeed", 0f);
+
         if (Input.GetButton("Sprint"))
             player.Anim.SetTrigger("Handstand");
         else
@@ -195,6 +194,7 @@ public class Climbing : StateBase<PlayerController>
 
     private void LetGo(PlayerController player)
     {
+        player.transform.parent = null;  // detaches from moving platforms
         player.Anim.SetTrigger("LetGo");
         player.StateMachine.GoToState<InAir>();
     }

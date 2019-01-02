@@ -12,6 +12,7 @@ TagManager:
   - HorPole
   - Slope
   - Stairs
+  - MovingPlatform
   layers:
   - Default
   - TransparentFX

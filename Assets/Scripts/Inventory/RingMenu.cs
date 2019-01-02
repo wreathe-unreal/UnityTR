@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class RingMenu : MonoBehaviour
 {
     public static bool isPaused = false;
+
     public float rotationRate = 10f;
 
     public GameObject menu;
@@ -28,24 +29,18 @@ public class RingMenu : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(input.inventory))
-        {
-            isPaused = !isPaused;
-
-            if (isPaused)
-                EnableMenu();
-            else
-                DisableMenu();
-        }
+        SwitchPauseState();
 
         if (!isPaused)
             return;
 
         if (Input.GetKeyDown(KeyCode.Return))
         {
-            inventory.Items[currentItem].Use(GetComponent<PlayerController>());
+            UseCurrentItem();
+
+            return;
         }
-        
+
         if (rotater.rotation.eulerAngles.y == targetRotation.eulerAngles.y)
         {
             float axisValue = Input.GetAxisRaw(input.horizontalAxis);
@@ -58,6 +53,30 @@ public class RingMenu : MonoBehaviour
             rotater.rotation = Quaternion.Slerp(rotater.rotation, targetRotation, rotationRate * Time.deltaTime);
         else
             rotater.rotation = targetRotation;
+    }
+
+    private void SwitchPauseState()
+    {
+        if (Input.GetKeyDown(input.inventory))
+        {
+            isPaused = !isPaused;
+
+            if (isPaused)
+                EnableMenu();
+            else
+                DisableMenu();
+        }
+    }
+
+    private void UseCurrentItem()
+    {
+        inventory.Items[currentItem].Use(GetComponent<PlayerController>());
+
+        if (inventory.Items[currentItem].destroyOnUse)
+            inventory.RemoveItem(inventory.Items[currentItem]);
+
+        isPaused = false;
+        DisableMenu();
     }
 
     private void RotateTo(int delta)
@@ -91,6 +110,11 @@ public class RingMenu : MonoBehaviour
             Destroy(child.gameObject);
         }
 
+        if (inventory.Items.Count == 0)
+        {
+            nameText.text = "Empty Inventory";
+        }
+        
         angleChange = (2f * Mathf.PI) / inventory.Items.Count;
 
         for (int i = 0; i < inventory.Items.Count; i++)

@@ -9,8 +9,8 @@ public class LedgeDetector
     private float minDepth = 0.05f;
     private float minHeight = 0.05f;
     private float hangRoom = 2.1f;
-    private float maxForwardAngle = 30f;
-    private float maxRightAngle = 30f;
+    private float maxForwardAngle = 45f;
+    private float maxRightAngle = 45f;
 
     // Singleton to conserve memory and easy management
     private LedgeDetector()
@@ -89,9 +89,11 @@ public class LedgeDetector
         if (!Physics.Raycast(start, dir, out hHit, maxDistance, notPlayerLayer, QueryTriggerInteraction.Ignore))
             goto NoLedge;
 
+        bool isMoving = hHit.collider.CompareTag("MovingPlatform");
+
         if (hHit.collider.CompareTag("Freeclimb"))
         {
-            ledgeInfo = new LedgeInfo(LedgeType.Free, new Vector3(hHit.point.x, start.y, hHit.point.z), -hHit.normal, true);
+            ledgeInfo = new LedgeInfo(LedgeType.Free, new Vector3(hHit.point.x, start.y, hHit.point.z), -hHit.normal, hHit.collider, true);
             return true;
         }
 
@@ -113,7 +115,7 @@ public class LedgeDetector
         // Check if player has room to hang
         bool hangRoom = !Physics.Raycast(ledgePoint - (dir * 0.1f), Vector3.down, 2f, notPlayerLayer, QueryTriggerInteraction.Ignore);
 
-        ledgeInfo = new LedgeInfo(LedgeType.Normal, ledgePoint, -hHit.normal, hangRoom);
+        ledgeInfo = new LedgeInfo(LedgeType.Normal, ledgePoint, -hHit.normal, hHit.collider, hangRoom);
         return true;
 
         NoLedge:
@@ -136,12 +138,12 @@ public class LedgeDetector
         {
             if (hit.collider.CompareTag("MonkeySwing"))
             {
-                ledgeInfo = new LedgeInfo(LedgeType.Monkey, hit.point, Vector3.up, true);
+                ledgeInfo = new LedgeInfo(LedgeType.Monkey, hit.point, Vector3.up, hit.collider, true);
                 return true;
             }
             else if (hit.collider.CompareTag("HorPole"))
             {
-                ledgeInfo = new LedgeInfo(LedgeType.HorPole, hit.point, Vector3.up, true);
+                ledgeInfo = new LedgeInfo(LedgeType.HorPole, hit.point, Vector3.up, hit.collider, true);
                 return true;
             }
         }
@@ -158,14 +160,26 @@ public class LedgeDetector
         if (Physics.Raycast(vStart, Vector3.down, out vHit, (maxHeight - 0.01f)))
         {
             RaycastHit hHit;
-            start = new Vector3(start.x, vHit.point.y - 0.01f, start.z);
-            Debug.DrawRay(start, dir * depth, Color.red, 1f);
+            Vector3 hStart = new Vector3(start.x, vHit.point.y - 0.01f, start.z);
+            Debug.DrawRay(hStart, dir * depth, Color.red, 1f);
             if (Physics.Raycast(start, dir, out hHit, depth))
             {
-                if (Vector3.Dot(dir, vHit.normal) < 0.17f && Vector3.Dot(vHit.normal, hHit.normal) < 0.17f)
+                Vector3 ledgeRight = Vector3.Cross(Vector3.up, hHit.normal);
+
+                float sideAngle = Vector3.SignedAngle(Vector3.up, vHit.normal, -hHit.normal);
+                float forwardAngle = Vector3.SignedAngle(Vector3.up, vHit.normal, ledgeRight);
+
+                // Check that the ledge doesnt slope too much in either direction
+                if (Mathf.Abs(sideAngle) < maxRightAngle && Mathf.Abs(forwardAngle) < maxForwardAngle)
                 {
-                    ledgeInfo = new LedgeInfo(LedgeType.Normal, new Vector3(hHit.point.x, vHit.point.y, hHit.point.z), -hHit.normal, false);
-                    return true;
+                    Vector3 ledgePoint = new Vector3(hHit.point.x, vHit.point.y, hHit.point.z);
+
+                    hStart = ledgePoint - dir * 0.1f + Vector3.up * 1.75f;
+                    if (!Physics.Raycast(hStart, dir, 1f))
+                    {
+                        ledgeInfo = new LedgeInfo(LedgeType.Normal, ledgePoint, -hHit.normal, hHit.collider, false);
+                        return true;
+                    }
                 }
                 
             }

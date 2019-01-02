@@ -5,7 +5,7 @@ using UnityEngine;
 public class PickUp : Interactable
 {
     public string itemName = "New Item";
-    public bool holdAtStart = false;
+    public bool destroyOnUse = false;
 
     private bool pickedUp = false;
 

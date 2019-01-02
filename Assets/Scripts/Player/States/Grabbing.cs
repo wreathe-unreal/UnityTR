@@ -79,13 +79,6 @@ class Grabbing : StateBase<PlayerController>
                 player.StateMachine.GoToState<MonkeySwing>();
                 return;
             }
-            else if (hit.collider.CompareTag("HorPole"))
-            {
-                player.transform.position = hit.point - Vector3.up * 1.9f;
-                HorPipe.CUR_PIPE = hit.collider.gameObject.GetComponent<HorPipe>();
-                player.StateMachine.GoToState<HorPole>();
-                return;
-            }
         }
         else if (player.Grounded)
         {

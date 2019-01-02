@@ -8,13 +8,15 @@ public class LedgeInfo
 
     private Vector3 point;
     private Vector3 direction;
+    private Collider collider;
     private LedgeType type;
 
-    public LedgeInfo(LedgeType type, Vector3 point, Vector3 direction, bool hangRoom)
+    public LedgeInfo(LedgeType type, Vector3 point, Vector3 direction, Collider collider, bool hangRoom)
     {
         this.point = point;
         this.direction = direction;
         this.hangRoom = hangRoom;
+        this.collider = collider;
         this.type = type;
     }
 
@@ -23,12 +25,18 @@ public class LedgeInfo
         this.point = Vector3.zero;
         this.direction = Vector3.zero;
         this.hangRoom = false;
+        this.collider = null;
         this.type = LedgeType.Normal;
     }
 
     public bool HangRoom
     {
         get { return hangRoom; }
+    }
+
+    public Collider Collider
+    {
+        get { return collider; }
     }
 
     public Vector3 Point

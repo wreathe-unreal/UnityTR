@@ -32,7 +32,7 @@ public class Weapon : MonoBehaviour
         {
             BulletHandler bHandler = hit.transform.gameObject.GetComponent<BulletHandler>();
 
-            if (bHandler == null)
+            if (!bHandler)
                 return;
 
             bHandler.HitHandler(hit.point, damage);
@@ -43,10 +43,12 @@ public class Weapon : MonoBehaviour
     {
         float time = Time.time;
         flash.SetActive(true);
+
         while (Time.time - time < 0.05f)
         {
             yield return null;
         }
+
         flash.SetActive(false);
     }
 }

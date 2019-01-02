@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class StateMachine<T>
 {
+    private bool suspendUpdate = false;
+
     private T owner;
     private StateBase<T> currentState;
     private List<StateBase<T>> possibleStates;
@@ -64,6 +66,19 @@ public class StateMachine<T>
 
     public void Update()
     {
+        if (suspendUpdate)
+            return;
+
         currentState.Update(owner);
     }
+
+    public void SuspendUpdate(bool suspend = true)
+    {
+        suspendUpdate = suspend;
+
+        if (suspend)
+            currentState.OnSuspend(owner);
+        else
+            currentState.OnUnsuspend(owner);
+    } 
 }

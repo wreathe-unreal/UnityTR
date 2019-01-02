@@ -7,6 +7,7 @@ public class AutoGrabbing : StateBase<PlayerController>
     private float timeTracker = 0f;
     private float grabTime = 0f;
 
+    private Vector3 initialColliderPos;
     private Vector3 grabPoint;
     private Vector3 startPosition;
     private Quaternion targetRot;
@@ -48,7 +49,9 @@ public class AutoGrabbing : StateBase<PlayerController>
         else
         {
             calcGrabPoint = ledgeInfo.Point + player.grabUpOffset * Vector3.down - ledgeInfo.Direction * player.grabForwardOffset;
-            targetRot = Quaternion.LookRotation(ledgeInfo.Direction);
+            Vector3 ledgeDir = ledgeInfo.Direction;
+            ledgeDir.y = 0f;
+            targetRot = Quaternion.LookRotation(ledgeDir);
         }
 
         startPosition = player.transform.position;
@@ -68,6 +71,19 @@ public class AutoGrabbing : StateBase<PlayerController>
                                 calcGrabPoint,
                                 player.gravity,
                                 grabTime);
+        }
+
+        if (ledgeInfo.Collider != null)
+        {
+            initialColliderPos = ledgeInfo.Collider.transform.position;
+
+            MovingPlatform moving = ledgeInfo.Collider.GetComponent<MovingPlatform>();
+
+            if (moving != null)
+            {
+                // So Player aligns with ledge
+                moving.AttachTransform(player.transform);
+            }
         }
 
         timeTracker = Time.time;
@@ -91,10 +107,19 @@ public class AutoGrabbing : StateBase<PlayerController>
 
         if (Time.time - timeTracker >= grabTime)
         {
-            if (UMath.GetHorizontalMag(player.Velocity) > 1f)
-                player.Anim.SetTrigger(HasFeetRoom() ? "DeepGrab" : "Grab");
-            else
-                player.Anim.SetTrigger("StandGrab");
+            if (ledgeInfo.Collider != null)
+            {
+                Vector3 change = ledgeInfo.Collider.transform.position - initialColliderPos;
+                grabPoint += change;
+            }
+
+            if (ledgeInfo.Type != LedgeType.HorPole)
+            {
+                if (UMath.GetHorizontalMag(player.Velocity) > 1f)
+                    player.Anim.SetTrigger(HasFeetRoom() ? "DeepGrab" : "Grab");
+                else
+                    player.Anim.SetTrigger("StandGrab");
+            }
 
             player.transform.position = grabPoint;
             player.transform.rotation = targetRot;

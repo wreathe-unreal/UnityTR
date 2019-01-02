@@ -14,6 +14,8 @@ public class UpperCombat : StateBase<PlayerController>
             return;
         }
 
+        player.Weapons.target = null;
+
         player.Stats.ShowCanvas();
         player.Anim.SetBool("isCombat", true);
         player.Anim.SetBool("isTargetting", true);
@@ -36,8 +38,8 @@ public class UpperCombat : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (!Input.GetKey(player.playerInput.drawWeapon) 
-            && Input.GetAxisRaw("CombatTrigger") < 0.1f)
+        if (player.StateMachine.IsInState<Dead>() ||
+            (!Input.GetKey(player.playerInput.drawWeapon) && Input.GetAxisRaw("CombatTrigger") < 0.1f))
         {
             player.UpperStateMachine.GoToState<Empty>();
             return;
@@ -55,6 +57,7 @@ public class UpperCombat : StateBase<PlayerController>
         player.Anim.SetFloat("AimAngle", aimAngle);
         player.Anim.SetBool("isFiring", Input.GetKey(player.playerInput.fireWeapon));
 
+        // Stops player's waist wobbling
         player.WaistRotation = player.transform.rotation;
     }
 

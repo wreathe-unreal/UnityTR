@@ -14,11 +14,14 @@ public class Crouch : StateBase<PlayerController>
     public override void OnEnter(PlayerController player)
     {
         isTransitioning = false;
+
         originalHeight = player.charControl.height;
         originalCenter = player.charControl.center;
+
         player.charControl.height = 0.6f;
         player.charControl.center = Vector3.up * 0.3f;
         player.camController.PivotOnHip();
+        player.camController.LAUTurning = true;
         player.Anim.applyRootMotion = true;
         player.Anim.SetBool("isCrouch", true);
         player.Velocity = Vector3.zero;
@@ -30,6 +33,7 @@ public class Crouch : StateBase<PlayerController>
         player.charControl.height = originalHeight;
         player.charControl.center = originalCenter;
         player.camController.PivotOnPivot();
+        player.camController.LAUTurning = false;
         player.Anim.applyRootMotion = false;
         player.Anim.SetBool("isCrouch", false);
     }
@@ -91,6 +95,6 @@ public class Crouch : StateBase<PlayerController>
         float moveSpeed = player.walkSpeed;
 
         player.MoveGrounded(moveSpeed);
-        player.RotateToVelocityGround(4f);
+        player.RotateToVelocityGround();
     }
 }

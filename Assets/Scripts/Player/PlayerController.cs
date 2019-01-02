@@ -119,16 +119,19 @@ public class PlayerController : MonoBehaviour
         stateMachine.AddState(new Grabbing());
         stateMachine.AddState(new AutoGrabbing());
         stateMachine.AddState(new MonkeySwing());
-        stateMachine.AddState(new HorPole());
         stateMachine.AddState(new Sliding());
+
         upperStateMachine.AddState(new Empty());
         upperStateMachine.AddState(new UpperCombat());
+
         stateMachine.GoToState<Locomotion>();
         upperStateMachine.GoToState<Empty>();
     }
 
     private void Update()
     {
+        smallestY = 0f;
+
         if (RingMenu.isPaused)
         {
             anim.speed = 0f;
@@ -156,77 +159,54 @@ public class PlayerController : MonoBehaviour
     {
         if (groundInfo.Angle > charControl.slopeLimit && velocity.y < 0f && groundInfo.Tag != "Slope")
         {
-            // Test if we are on sharp edge or not
-            RaycastHit testHit;
-            Vector3 castTestDir = -new Vector3(groundInfo.Normal.x, 0f, groundInfo.Normal.z).normalized;
-
-            if (Physics.Raycast(transform.position, castTestDir, out testHit, charControl.radius + 0.1f))
-            {
-                if (Vector3.Angle(Vector3.up, testHit.normal) >= 90f)
-                    return;
-            }
-
             Vector3 slopeRight = Vector3.Cross(Vector3.up, groundInfo.Normal).normalized;
             Vector3 slopeDirection = Vector3.Cross(slopeRight, groundInfo.Normal).normalized;
 
+            Debug.DrawRay(transform.position, slopeDirection, Color.red);
+
             Quaternion rotater = Quaternion.FromToRotation(velocity.normalized, slopeDirection);
 
-            velocity = Vector3.Project(velocity, slopeDirection);
+            velocity = Vector3.ProjectOnPlane(velocity, groundInfo.Normal);
         }
     }
 
     private void CheckForGround()
     {
-        isGrounded = false;
 
-        groundInfo.Distance = 2f;
-        groundInfo.Angle = 0f;
-        groundInfo.Tag = "";
-        groundInfo.Normal = Vector3.up;
+        if (groundInfo.Angle > charControl.slopeLimit && groundInfo.Tag != "Slope")
+            isGrounded = false;
+        else
+            isGrounded = charControl.isGrounded;
 
-        RaycastHit groundHit;
+        // This downwards ray is more accurate than the capsule information
+        // its not always available and player gets stuck if its not so we still use collider hit
 
-        Vector3 sphereStart = transform.position + Vector3.up * charControl.radius;
+        RaycastHit hit;
+        
+        float castDist = charControl.stepOffset + charControl.skinWidth + charControl.radius;
 
-        if (Physics.SphereCast(sphereStart, charControl.radius, Vector3.down, out groundHit, charControl.skinWidth + 0.1f, ~(1 << 8), QueryTriggerInteraction.Ignore))
+        Vector3 centerStart = transform.position + Vector3.up * charControl.radius;
+
+        Debug.DrawRay(centerStart, Vector3.down * castDist, Color.blue);
+        if (Physics.Raycast(centerStart, Vector3.down, out hit, castDist, ~(1 << 8), QueryTriggerInteraction.Ignore))
         {
-            isGrounded = true;
-            groundInfo.Distance = transform.position.y - groundHit.point.y;
-            groundInfo.Angle = UMath.GroundAngle(groundHit.normal);
-            groundInfo.Tag = groundHit.collider.tag;
-            groundInfo.Normal = groundHit.normal;
-        }
-        else if (charControl.isGrounded)
-        {
-            isGrounded = true;
-        }
-
-        if (true)
-        {
-            float castDist = charControl.stepOffset + charControl.skinWidth + charControl.radius;
-
-            Vector3 centerStart = transform.position 
-                + Vector3.up * charControl.radius 
-                + transform.forward * charControl.radius;
-
-            centerStart = transform.position
-            + Vector3.up * charControl.radius;
-
-            Debug.DrawRay(centerStart, Vector3.down * castDist, Color.white);
-            if (Physics.Raycast(centerStart, Vector3.down, out groundHit, castDist)
-                && !groundHit.collider.CompareTag("Water"))
-            {
-                groundInfo.Distance = transform.position.y - groundHit.point.y;
-                groundInfo.Angle = UMath.GroundAngle(groundHit.normal);
-                groundInfo.Tag = groundHit.collider.tag;
-                groundInfo.Normal = groundHit.normal;
-            }
-
-            if (considerStepOffset && groundInfo.Distance < charControl.stepOffset)
-                isGrounded = true;
+            groundInfo.Distance = transform.position.y - hit.point.y;
+            groundInfo.Angle = UMath.GroundAngle(hit.normal);
+            groundInfo.Tag = hit.collider.tag;
+            groundInfo.Normal = hit.normal;
 
             if (groundInfo.Angle > charControl.slopeLimit && groundInfo.Tag != "Slope")
+            {
                 isGrounded = false;
+            }
+            else
+            {
+                float maxHeight = considerStepOffset ? charControl.stepOffset : 0.1f;
+
+                // allows player to run of steps properly
+                if (groundInfo.Distance <= maxHeight)
+                    isGrounded = true;
+            }
         }
 
         anim.SetBool("isGrounded", isGrounded);
@@ -234,9 +214,22 @@ public class PlayerController : MonoBehaviour
         anim.SetFloat("groundAngle", groundInfo.Angle);
     }
 
+    float smallestY = 0f;
+
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
-        //stateMachine.SendMessage(hit);
+        if (hit.normal.y < 0f)
+            return; // normal is pointing down so mustn't be ground
+
+        if (hit.normal.y >= smallestY)
+        {
+            groundInfo.Distance = transform.position.y - hit.point.y;
+            groundInfo.Angle = UMath.GroundAngle(hit.normal);
+            groundInfo.Tag = hit.collider.tag;
+            groundInfo.Normal = hit.normal;
+
+            smallestY = hit.normal.y;
+        }
     }
 
     private void OnAnimatorIK()

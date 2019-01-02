@@ -9,6 +9,7 @@ public class MonkeySwing : StateBase<PlayerController>
     public override void OnEnter(PlayerController player)
     {
         player.camController.PivotOnHip();
+        player.camController.LAUTurning = true;
         player.Anim.applyRootMotion = true;
         player.Anim.SetBool("isMonkey", true);
         player.MinimizeCollider();
@@ -18,6 +19,7 @@ public class MonkeySwing : StateBase<PlayerController>
     public override void OnExit(PlayerController player)
     {
         player.camController.PivotOnPivot();
+        player.camController.LAUTurning = false;
         player.Anim.applyRootMotion = false;
         player.Anim.SetBool("isMonkey", false);
         player.MaximizeCollider();

@@ -29366,7 +29366,7 @@ AnimationClip:
     m_AdditiveReferencePoseClip: {fileID: 0}
     m_AdditiveReferencePoseTime: 0
     m_StartTime: 0
-    m_StopTime: 4.7333336
+    m_StopTime: 4.733333
     m_OrientationOffsetY: 0
     m_Level: 0.14
     m_CycleOffset: 0

@@ -102,7 +102,9 @@ public class CameraController : MonoBehaviour
         float yawMax = target.eulerAngles.y + range;
         float yawMin = target.eulerAngles.y - range;
 
-        yaw = Mathf.Clamp(yaw % 360f, yawMin, yawMax);
+        yaw = UMath.ClampAngle(yaw, yawMin, yawMax);
+
+        StartCoroutine(UnsmoothRotationSet());
     }
 
     private void HandleMovement()
@@ -127,6 +129,16 @@ public class CameraController : MonoBehaviour
             currentTurnRate = turnRate - (vertAxis * verticalTurnInfluence);
 
         yaw += currentTurnRate * axisValue;
+    }
+
+    public IEnumerator UnsmoothRotationSet()
+    {
+        float oldSmoothValue = rotationSmoothing;
+        rotationSmoothing = 0f;
+
+        yield return null;
+
+        rotationSmoothing = oldSmoothValue;
     }
 
     public void PivotOnHead()

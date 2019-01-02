@@ -6,7 +6,7 @@ public class EnemyBulletHandler : BulletHandler
 {
     private EnemyController enemy;
 
-    protected override void Start()
+    private void Start()
     {
         enemy = GetComponent<EnemyController>();
     }

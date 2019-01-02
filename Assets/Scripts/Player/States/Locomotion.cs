@@ -43,6 +43,16 @@ public class Locomotion : StateBase<PlayerController>
         player.IsFootIK = false;
     }
 
+    public override void OnSuspend(PlayerController player)
+    {
+        player.camController.LAUTurning = false;
+    }
+
+    public override void OnUnsuspend(PlayerController player)
+    {
+        player.camController.LAUTurning = true;
+    }
+
     public override void Update(PlayerController player)
     {
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
@@ -77,7 +87,7 @@ public class Locomotion : StateBase<PlayerController>
             return;
         }
 
-        if (!player.Grounded && player.Ground.Distance > player.charControl.stepOffset && !isRootMotion)
+        if (!player.Grounded && !isRootMotion)
         {
             // Check if there is a ledge to grab as a last chance
             if (ledgeDetector.FindLedgeAtPoint(player.transform.position, -player.transform.forward, 0.5f, 1f, out ledgeInfo) && ledgeInfo.HangRoom)
