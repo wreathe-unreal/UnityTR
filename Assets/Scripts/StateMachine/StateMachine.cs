@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,24 +7,24 @@ public class StateMachine<T>
 {
     private bool suspendUpdate = false;
 
-    private T owner;
+    private readonly T owner;
     private StateBase<T> currentState;
-    private List<StateBase<T>> possibleStates;
+    private Dictionary<string, StateBase<T>> possibleStates;
 
     public StateMachine(T owner)
     {
         this.owner = owner;
-        possibleStates = new List<StateBase<T>>();
+        possibleStates = new Dictionary<string, StateBase<T>>();
     }
 
     public void AddState(StateBase<T> state)
     {
-        possibleStates.Add(state);
+        possibleStates.Add(GetStateName(state), state);
     }
 
     public void RemoveState(StateBase<T> state)
     {
-        possibleStates.Remove(state);
+        possibleStates.Remove(GetStateName(state));
     }
 
     public bool IsInState<TState>()
@@ -33,34 +34,34 @@ public class StateMachine<T>
 
     public void GoToState<TState>()
     {
-        foreach (StateBase<T> state in possibleStates)
+        string stateType = typeof(TState).ToString();
+
+        if (currentState != null)
+            currentState.OnExit(owner);
+
+        if (possibleStates.TryGetValue(stateType, out currentState))
         {
-            if (state is TState)
-            {
-                if (currentState != null)
-                    currentState.OnExit(owner);
-                currentState = state;
-                currentState.OnEnter(owner);
-                return;
-            }
+            currentState.OnEnter(owner);
+            return;
         }
+
         Debug.LogError("State is not available.");
     }
 
     public void GoToState<TState>(object context)
     {
-        foreach (StateBase<T> state in possibleStates)
+        string stateType = typeof(TState).ToString();
+
+        if (currentState != null)
+            currentState.OnExit(owner);
+
+        if (possibleStates.TryGetValue(stateType, out currentState))
         {
-            if (state is TState)
-            {
-                if (currentState != null)
-                    currentState.OnExit(owner);
-                currentState = state;
-                currentState.ReceiveContext(context);
-                currentState.OnEnter(owner);
-                return;
-            }
+            currentState.ReceiveContext(context);
+            currentState.OnEnter(owner);
+            return;
         }
+
         Debug.LogError("State is not available.");
     }
 
@@ -81,4 +82,11 @@ public class StateMachine<T>
         else
             currentState.OnUnsuspend(owner);
     } 
+
+    private string GetStateName(StateBase<T> state)
+    {
+        Type stateType = state.GetType();
+
+        return stateType.ToString();
+    }
 }

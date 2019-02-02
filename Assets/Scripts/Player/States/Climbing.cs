@@ -44,7 +44,7 @@ public class Climbing : StateBase<PlayerController>
         AnimatorTransitionInfo transInfo = player.Anim.GetAnimatorTransitionInfo(0);
 
         right = Input.GetAxisRaw(player.playerInput.horizontalAxis);
-        player.Anim.SetFloat("Right", right);
+        
 
         if (isInCornering || isOutCornering)
         {
@@ -91,8 +91,26 @@ public class Climbing : StateBase<PlayerController>
             }
         }
 
-        HandleCorners(player);
+        float horDir = Mathf.Sign(right);
+
+        if (IsBlocked(player, horDir * player.transform.right, 0.34f))
+        {
+            player.Anim.applyRootMotion = false;
+
+            if (!FindInnerCorner(player, horDir))
+                right = 0f;
+        }
+        else
+        {
+            player.Anim.applyRootMotion = true;
+        }
+
         AdjustPosition(player);
+
+        player.Anim.SetFloat("Right", right);
+
+        player.Anim.SetBool("isOutCorner", isOutCornering);
+        player.Anim.SetBool("isInCorner", isInCornering);
 
         if (Input.GetKey(player.playerInput.jump) && animState.IsName("HangLoop")
             && ledgeDetector.CanClimbUp(player.transform.position, player.transform.forward))
@@ -101,80 +119,85 @@ public class Climbing : StateBase<PlayerController>
 
     private void HandleCorners(PlayerController player)
     {
-        float upOffset = player.hangUpOffset - 0.1f;
-
-        Vector3 start = player.transform.position + (Vector3.up * upOffset) - (player.transform.right * 0.3f);
-        ledgeLeft = ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.2f, 0.2f);
-
-        start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
-        ledgeInnerLeft = ledgeDetector.FindLedgeAtPoint(start, -player.transform.right, 0.34f, 0.2f);
-
-        start = player.transform.position + (Vector3.up * upOffset) + (player.transform.right * 0.3f);
-        ledgeRight = ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.2f, 0.2f);
-
-        start = player.transform.position + (Vector3.up * upOffset) - (player.transform.forward * 0.15f);
-        ledgeInnerRight = ledgeDetector.FindLedgeAtPoint(start, player.transform.right, 0.34f, 0.2f);
+        bool found = false;
 
         if (right < -0.1f)
         {
-            if (ledgeInnerLeft)
-            {
-                player.Anim.applyRootMotion = false; // Stops player overshooting turn point
-                isInCornering = true;
-            }
-            else if (!ledgeLeft)
-            {
-                start = player.transform.position + (Vector3.up * 2f) - player.transform.right * 0.3f
-                    + player.transform.forward * 0.4f;
-
-                player.Anim.applyRootMotion = false; 
-                isOutCornering = ledgeDetector.FindLedgeAtPoint(start, player.transform.right, 0.34f, 0.2f);
-
-                if (!isOutCornering)
-                    right = Mathf.Clamp01(right);
-            }
-            else
-            {
-                start = player.transform.position + (Vector3.up * 2f) - (player.transform.forward * 0.15f);
-
-                if (Physics.Raycast(start, player.transform.right, 0.4f))
-                    right = Mathf.Clamp(right, -1f, 0);
-            }
+            //found = FindCorner(player, -1f, ref ledgeLeft, ref ledgeInnerLeft);
         }
         else if (right > 0.1f)
         {
-            if (ledgeInnerRight)
-            {
-                player.Anim.applyRootMotion = false; 
-                isInCornering = true;
-            }
-            else if (!ledgeRight)
-            {
-                start = player.transform.position + (Vector3.up * 2f) + player.transform.right * 0.3f
-                    + player.transform.forward * 0.4f;
-
-                player.Anim.applyRootMotion = false; 
-                isOutCornering = ledgeDetector.FindLedgeAtPoint(start, -player.transform.right, 0.34f, 0.2f);
-
-                if (!isOutCornering)
-                    right = Mathf.Clamp(right, -1f, 0f);
-            }
-            else
-            {
-                start = player.transform.position + (Vector3.up * 2f) - (player.transform.forward * 0.15f);
-
-                if (Physics.Raycast(start, -player.transform.right, 0.4f))
-                    right = Mathf.Clamp01(right);
-            }
+            //found = FindCorner(player, 1f, ref ledgeRight, ref ledgeInnerRight);
         }
-        else
+
+        if (!found)
+            right = 0f;
+    }
+
+    private bool FindInnerCorner(PlayerController player, float sign)
+    {
+        float upOffset = player.hangUpOffset - ledgeDetector.MinDepth;
+
+        // Check for inner corner
+        Vector3 start = player.transform.position
+            + Vector3.up * upOffset
+            - player.transform.forward * 0.15f;
+
+        if (ledgeDetector.FindLedgeAtPoint(start, sign * player.transform.right, 0.4f, 0.2f))
         {
-            isOutCornering = isInCornering = false;
-            player.Anim.applyRootMotion = true;
+            isInCornering = true;
+
+            if (sign == 1f)
+                ledgeInnerRight = true;
+            else
+                ledgeInnerLeft = true;
+
+            return true;
         }
 
-        player.Anim.SetBool("isOutCorner", isOutCornering);
-        player.Anim.SetBool("isInCorner", isInCornering);
+        return false;
+    }
+
+    private bool FindOutterCorner(PlayerController player, float sign, ref bool result)
+    {
+        float upOffset = player.hangUpOffset - ledgeDetector.MinDepth;
+
+        Vector3 start = player.transform.position
+            + Vector3.up * upOffset
+            + sign * player.transform.right * 0.4f
+            + player.transform.forward * 0.4f;
+
+        if (ledgeDetector.FindLedgeAtPoint(start, -sign * player.transform.right, 0.34f, 0.2f))
+        {
+            isOutCornering = true;
+            result = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsBlocked(PlayerController player, Vector3 dir, float distance, int accuracy = 8)
+    {
+        // Check for inner blockage (like a wall)
+        float deltaHeight = player.hangUpOffset / accuracy;
+
+        for (int i = 0; i <= accuracy; i++)
+        {
+            Vector3 start = player.transform.position + (i * deltaHeight * Vector3.up);
+
+            if (Physics.Raycast(start, dir, distance))
+                return true;
+        }
+
+        // Only not blocked if ledge to climb on
+        float upOffset = player.hangUpOffset - ledgeDetector.MinDepth;
+        Vector3 start2 = player.transform.position + (Vector3.up * upOffset) + (dir * 0.4f);
+
+        if (ledgeDetector.FindLedgeAtPoint(start2, player.transform.forward, 0.2f, 0.2f))
+            return false; 
+
+        return true;  // No ledge detected at all
     }
 
     private void ClimbUp(PlayerController player)
@@ -203,7 +226,7 @@ public class Climbing : StateBase<PlayerController>
     {
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
 
-        Vector3 start = player.transform.position + Vector3.up * (player.hangUpOffset - 0.1f);
+        Vector3 start = player.transform.position + Vector3.up * (player.hangUpOffset - ledgeDetector.MinDepth);
 
         LedgeInfo ledgeInfo;
         if (ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.2f, 0.2f, out ledgeInfo))
@@ -218,10 +241,5 @@ public class Climbing : StateBase<PlayerController>
 
             player.transform.position = newPosition;
         }
-    }
-
-    private void CheckForFeetRoom(PlayerController player)
-    {
-        
     }
 }
