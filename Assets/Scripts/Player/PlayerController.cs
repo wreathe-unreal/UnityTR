@@ -25,8 +25,6 @@ public class PlayerController : MonoBehaviour
     public float jumpHeight = 1.2f;
     public float runJumpVel = 4.5f;
     public float standJumpVel = 3.5f;
-    [Header("IK Settings")]
-    public float footYOffset = 0.1f;
     [Header("Offsets")]
     public float grabForwardOffset = 0.11f;
     public float grabUpOffset = 1.56f;
@@ -42,14 +40,11 @@ public class PlayerController : MonoBehaviour
 
     private bool isGrounded = true;
     private bool considerStepOffset = false;
-    private bool isFootIK = false;
-    private bool holdRotation = false;
     private bool forceWaistRotation = false;
     private bool forceHeadLook = false;
     private float jumpYVel = 0f;
     private float damageVelocity = 0f;
     private float deathVelocity = 0f;
-    private float combatAngle = 0f;
     [HideInInspector]
     public bool isMovingAuto = false;
     private float targetAngle = 0f;
@@ -454,7 +449,7 @@ public class PlayerController : MonoBehaviour
 
     public void RotateToVelocityGround(float smoothing = 0f)
     {
-        if (holdRotation || UMath.GetHorizontalMag(velocity) < 0.1f)
+        if (UMath.GetHorizontalMag(velocity) < 0.1f)
             return;
 
         Quaternion target = Quaternion.Euler(0.0f, Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg, 0.0f);
@@ -470,7 +465,7 @@ public class PlayerController : MonoBehaviour
     // This method is necessary as Lara must run backwards 50% of the time
     public void RotateToVelocityStrafe(float smoothing = 8f)
     {
-        if (holdRotation || UMath.GetHorizontalMag(velocity) < 0.1f)
+        if (UMath.GetHorizontalMag(velocity) < 0.1f)
             return;
 
         float theAngle = Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg;
@@ -507,7 +502,7 @@ public class PlayerController : MonoBehaviour
 
     public void RotateToVelocity(float smoothing = 0f)
     {
-        if (holdRotation || velocity.magnitude < 0.1f)
+        if (velocity.magnitude < 0.1f)
             return;
 
         if (smoothing == 0f)
@@ -548,7 +543,7 @@ public class PlayerController : MonoBehaviour
         charControl.enabled = true;
     }
 
-    #region Properties
+    #region Public Properties
 
     public StateMachine<PlayerController> StateMachine
     {
@@ -619,12 +614,6 @@ public class PlayerController : MonoBehaviour
         set { considerStepOffset = value; }
     }
 
-    public bool IsFootIK
-    {
-        get { return isFootIK; }
-        set { isFootIK = value; }
-    }
-
     public bool ForceWaistRotation
     {
         get { return forceWaistRotation; }
@@ -650,11 +639,6 @@ public class PlayerController : MonoBehaviour
     public float DeathVelocity
     {
         get { return deathVelocity; }
-    }
-
-    public float CombatAngle
-    {
-        get { return combatAngle; }
     }
 
     public GroundInfo Ground

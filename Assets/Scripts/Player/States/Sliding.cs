@@ -8,13 +8,11 @@ public class Sliding : StateBase<PlayerController>
     {
         player.Anim.applyRootMotion = false;
         player.Anim.SetBool("isSliding", true);
-        player.IsFootIK = true;
     }
 
     public override void OnExit(PlayerController player)
     {
         player.Anim.SetBool("isSliding", false);
-        player.IsFootIK = false;
     }
 
     public override void Update(PlayerController player)

@@ -26,8 +26,6 @@ public class Locomotion : StateBase<PlayerController>
         player.Anim.SetFloat("YSpeed", 0f);
         player.Anim.applyRootMotion = true;
 
-        player.IsFootIK = true;
-
         isTransitioning = false;
         isRootMotion = false;
     }
@@ -39,8 +37,6 @@ public class Locomotion : StateBase<PlayerController>
         player.camController.LAUTurning = false;
 
         player.Anim.SetBool("isLocomotion", false);
-
-        player.IsFootIK = false;
     }
 
     public override void OnSuspend(PlayerController player)
@@ -57,8 +53,6 @@ public class Locomotion : StateBase<PlayerController>
     {
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
         AnimatorTransitionInfo transInfo = player.Anim.GetAnimatorTransitionInfo(0);
-
-        player.IsFootIK = UMath.GetHorizontalMag(player.Velocity) < 0.1f;
 
         if (player.isMovingAuto)
             return;
@@ -178,7 +172,7 @@ public class Locomotion : StateBase<PlayerController>
 
     private void LookForStepLedges(PlayerController player)
     {
-        if (Input.GetButtonDown("Jump") && !isRootMotion /*&& player.Anim.GetCurrentAnimatorStateInfo(0).IsName("Idle")*/)
+        if (Input.GetButtonDown("Jump") && !isRootMotion)
         {
             isRootMotion = ledgeDetector.FindPlatformInfront(player.transform.position,
                 player.transform.forward, 2f, out ledgeInfo);
@@ -215,6 +209,7 @@ public class Locomotion : StateBase<PlayerController>
     {
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
         AnimatorTransitionInfo transInfo = player.Anim.GetAnimatorTransitionInfo(0);
+
         if (!waitingBool && isRootMotion && animState.IsName("Idle"))
         {
             player.EnableCharControl();
@@ -233,7 +228,6 @@ public class Locomotion : StateBase<PlayerController>
         else if (transInfo.IsName("AnyState -> StepUp_Hlf") || transInfo.IsName("AnyState -> StepUp_Qtr")
             || transInfo.IsName("AnyState -> StepUp_Full"))
         {
-            Debug.Log("in trans");
             player.Anim.applyRootMotion = false;
         }
     }
