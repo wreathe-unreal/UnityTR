@@ -5,7 +5,6 @@ using UnityEngine.SceneManagement;
 
 public class Dead : StateBase<PlayerController>
 {
-    private bool ragged = false;
     private float timeCounter = 0f;
     private float timeToWait = 1.6f;
 
@@ -21,13 +20,8 @@ public class Dead : StateBase<PlayerController>
         player.DisableCharControl();
         hitVelocity = player.Velocity;
         player.Velocity = Vector3.zero;
-        player.camController.PivotOnTarget();
+        player.CamControl.PivotOnTarget();
         timeCounter = Time.time;
-        foreach (Rigidbody rb in player.ragRigidBodies)
-        {
-            rb.velocity = player.Velocity;
-        }
-        player.camController.target = player.ragRigidBodies[0].transform;
     }
 
     public override void OnExit(PlayerController player)
@@ -37,21 +31,6 @@ public class Dead : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (Time.time - timeCounter >= timeToWait && !ragged)
-        {
-            ragged = true;
-            player.Anim.enabled = false;
-            player.EnableRagdoll();
-            player.Velocity = -hitVelocity;
-            if (player.Velocity.y < -20f)
-            {
-                foreach (Rigidbody rb in player.ragRigidBodies)
-                {
-                    rb.AddForce(player.Velocity, ForceMode.Impulse);
-                }
-            }
-        }
-
         if (Time.time - timeCounter >= 5f)
         {
             SceneManager.LoadScene("DevArea");

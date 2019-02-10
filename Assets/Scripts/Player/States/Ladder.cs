@@ -52,10 +52,10 @@ public class Ladder : StateBase<PlayerController>
         player.transform.rotation = Quaternion.Lerp(player.transform.rotation, 
             Quaternion.LookRotation(currentLadder.transform.forward), 5f * Time.deltaTime);
 
-        float forward = Input.GetAxisRaw(player.playerInput.verticalAxis);
-        float right = Input.GetAxisRaw(player.playerInput.horizontalAxis);
+        float forward = Input.GetAxisRaw(player.Inputf.verticalAxis);
+        float right = Input.GetAxisRaw(player.Inputf.horizontalAxis);
 
-        if (Input.GetKeyDown(player.playerInput.crouch))
+        if (Input.GetKeyDown(player.Inputf.crouch))
         {
             player.Velocity = Vector3.zero;
             player.Anim.SetTrigger("LetGo");
@@ -64,7 +64,7 @@ public class Ladder : StateBase<PlayerController>
         }
 
         if (player.transform.position.y > currentLadder.transform.position.y
-            + (currentLadder.MainCollider.size.y - player.charControl.height))
+            + (currentLadder.MainCollider.size.y - player.CharControl.height))
         {
             if (currentLadder.offAtTop && forward > 0.1f)
             {

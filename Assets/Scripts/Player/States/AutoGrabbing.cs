@@ -36,8 +36,8 @@ public class AutoGrabbing : StateBase<PlayerController>
         player.Anim.SetBool("isAutoGrabbing", true);
         player.ForceHeadLook = true;
 
-        grabPoint = ledgeInfo.Point - player.transform.forward * player.hangForwardOffset;
-        grabPoint.y = ledgeInfo.Point.y - player.hangUpOffset;
+        grabPoint = ledgeInfo.Point - player.transform.forward * player.HangForwardOffset;
+        grabPoint.y = ledgeInfo.Point.y - player.HangUpOffset;
 
         Vector3 calcGrabPoint;
 
@@ -48,7 +48,7 @@ public class AutoGrabbing : StateBase<PlayerController>
         }
         else
         {
-            calcGrabPoint = ledgeInfo.Point + player.grabUpOffset * Vector3.down - ledgeInfo.Direction * player.grabForwardOffset;
+            calcGrabPoint = ledgeInfo.Point + player.GrabUpOffset * Vector3.down - ledgeInfo.Direction * player.GrabForwardOffset;
             Vector3 ledgeDir = ledgeInfo.Direction;
             ledgeDir.y = 0f;
             targetRot = Quaternion.LookRotation(ledgeDir);
@@ -56,21 +56,21 @@ public class AutoGrabbing : StateBase<PlayerController>
 
         startPosition = player.transform.position;
 
-        player.Velocity = UMath.VelocityToReachPoint(player.transform.position,
+        player.ImpulseVelocity(UMath.VelocityToReachPoint(player.transform.position,
                             calcGrabPoint,
-                            player.runJumpVel,
-                            player.gravity,
-                            out grabTime);
+                            player.RunJumpVel,
+                            player.Gravity,
+                            out grabTime));
 
         // So Lara doesn't do huge upwards jumps or snap when close
         if (grabTime < 0.3f || grabTime > 1.2f)
         {
             grabTime = Mathf.Clamp(grabTime, 0.4f, 1.2f);
 
-            player.Velocity = UMath.VelocityToReachPoint(player.transform.position,
+            player.ImpulseVelocity(UMath.VelocityToReachPoint(player.transform.position,
                                 calcGrabPoint,
-                                player.gravity,
-                                grabTime);
+                                player.Gravity,
+                                grabTime));
         }
 
         if (ledgeInfo.Collider != null)
@@ -101,8 +101,6 @@ public class AutoGrabbing : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        player.ApplyGravity(player.gravity);
-
         player.HeadLookAt = ledgeInfo.Point;
 
         if (Time.time - timeTracker >= grabTime)

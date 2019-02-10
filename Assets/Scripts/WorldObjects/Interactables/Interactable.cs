@@ -11,7 +11,7 @@ public class Interactable : MonoBehaviour
 
         PlayerController player = other.GetComponent<PlayerController>();
 
-        if (Input.GetKeyDown(player.playerInput.action))
+        if (Input.GetKeyDown(player.Inputf.action))
         {
             Interact(player);
         }

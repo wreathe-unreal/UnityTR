@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Networking;
 
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(PlayerStats))]
@@ -9,53 +8,63 @@ using UnityEngine.Networking;
 [RequireComponent(typeof(PlayerSFX))]
 public class PlayerController : MonoBehaviour
 {
-    public bool autoLedgeTarget = true;
+    #region Private Serializable Fields
+
+    [SerializeField] private bool autoLedgeTarget = true;
+
     [Header("Movement Speeds")]
-    public float runSpeed = 3.49f;
-    public float walkSpeed = 1.44f;
-    public float stairSpeed = 2f;
-    public float swimSpeed = 2f;
-    public float treadSpeed = 1.2f;
-    public float slideSpeed = 5f;
+    [SerializeField] private float runSpeed = 3.49f;
+    [SerializeField] private float walkSpeed = 1.345f;
+    [SerializeField] private float stairSpeed = 2f;
+    [SerializeField] private float swimSpeed = 2f;
+    [SerializeField] private float treadSpeed = 1.2f;
+    [SerializeField] private float slideSpeed = 5f;
+    [SerializeField] private float speedChangeRate = 8f;
+
     [Header("Physics")]
-    public float gravity = 9.8f;
-    public float damageHeight = 7f;
-    public float deathHeight = 12f;
+    [SerializeField] private float gravity = 14f;
+    [SerializeField] private float damageHeight = 7f;
+    [SerializeField] private float deathHeight = 10f;
+    [SerializeField] private float terminalVelocity = 30f;
+
     [Header("Jump Settings")]
-    public float jumpHeight = 1.2f;
-    public float runJumpVel = 4.5f;
-    public float standJumpVel = 3.5f;
+    [SerializeField] private float jumpHeight = 1.2f;
+    [SerializeField] private float runJumpVel = 4.5f;
+    [SerializeField] private float standJumpVel = 3.5f;
+
     [Header("Offsets")]
-    public float grabForwardOffset = 0.11f;
-    public float grabUpOffset = 1.56f;
-    public float hangForwardOffset = 0.11f;
-    public float hangUpOffset = 1.975f;
+    [SerializeField] private float grabForwardOffset = 0.11f;
+    [SerializeField] private float grabUpOffset = 1.86f;
+    [SerializeField] private float hangForwardOffset = 0.11f;
+    [SerializeField] private float hangUpOffset = 2.05f;
 
     [Header("References")]
-    public CameraController camController;
-    public Transform waistBone;
-    public Transform headBone;
-    [Header("Ragdoll")]
-    public Rigidbody[] ragRigidBodies;
+    [SerializeField] private CameraController camController;
+    [SerializeField] private Transform waistBone;
+    [SerializeField] private Transform headBone;
+
+    #endregion
+
+    #region Private Fields
 
     private bool isGrounded = true;
-    private bool considerStepOffset = false;
+    private bool useGravity = true;  // Gravity has no effect if false
+    private bool groundedOnSteps = false;  // Allows player to walk off steps without ungrounding
     private bool forceWaistRotation = false;
     private bool forceHeadLook = false;
-    private float jumpYVel = 0f;
-    private float damageVelocity = 0f;
-    private float deathVelocity = 0f;
-    [HideInInspector]
-    public bool isMovingAuto = false;
+    private bool isMovingAuto = false;  // Player is automatically moving somewhere (i.e. with no player input)
+    private bool useRootMotion = false; // Allows root motion movement that is compatible with char controller
+    private float verticalSpeed = 0f;  // From the effect of gravity only
+    private float jumpYVel = 0f;  // Velocity calculated from jump height
+    private float damageVelocity = 0f;  // Minimum velocity at which fall damage will occur
+    private float deathVelocity = 0f;  // Falling velocity at which player will die
     private float targetAngle = 0f;
     private float targetSpeed = 0f;
 
-    private StateMachine<PlayerController> stateMachine;
-    private StateMachine<PlayerController> upperStateMachine;
-    [HideInInspector]
-    public CharacterController charControl;
-    [HideInInspector]
-    public PlayerInput playerInput;
+    private StateMachine<PlayerController> stateMachine;  // Player's general state machine
+    private StateMachine<PlayerController> upperStateMachine;  // State machine referring to what's above the waist
+    private CharacterController charControl;
+    private PlayerInput playerInput;
     private Transform cam;
     private Animator anim;
     private PlayerStats playerStats;
@@ -66,12 +75,15 @@ public class PlayerController : MonoBehaviour
     private Vector3 headLookAt;
     private Vector3 velocity;
     private Vector3 localVelocity;
+    private Vector3 movementOffset; // Final movement amount (to keep gravity effect separate)
     private GroundInfo groundInfo;
+
+    #endregion
+
+    #region Private Methods
 
     private void Awake()
     {
-        DisableRagdoll();
-
         // Calc jump speeds - v^2 = u^2 + 2as
         jumpYVel = Mathf.Sqrt(2f * jumpHeight * gravity);
 
@@ -89,7 +101,7 @@ public class PlayerController : MonoBehaviour
         playerStats = GetComponent<PlayerStats>();
         playerStats.HideCanvas();
         velocity = Vector3.zero;
-        localVelocity = Vector3.forward;
+        localVelocity = Vector3.zero;
         stateMachine = new StateMachine<PlayerController>(this);
         upperStateMachine = new StateMachine<PlayerController>(this);
         weaponManager = GetComponent<WeaponManager>();
@@ -125,8 +137,6 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        smallestY = 0f;
-
         if (RingMenu.isPaused)
         {
             anim.speed = 0f;
@@ -139,35 +149,41 @@ public class PlayerController : MonoBehaviour
 
         CheckForGround();
 
+        smallestY = 0f;
+
+        ApplyGravity();
+
         stateMachine.Update();
         upperStateMachine.Update();
 
         UpdateAnimator();
 
+        BuildMovementOffset();
+
         SlideOffSlopeLimit();
 
+        Debug.Log(movementOffset + " Grounded: " + isGrounded + " Vert: " + verticalSpeed + " Hor: " + velocity + " Anim: " + anim.velocity);
+
         if (charControl.enabled)
-            charControl.Move((anim.applyRootMotion ? Vector3.Scale(velocity, Vector3.up) : velocity) * Time.deltaTime);
+            charControl.Move(movementOffset); 
     }
 
-    private void SlideOffSlopeLimit()
+    private void LateUpdate()
     {
-        if (groundInfo.Angle > charControl.slopeLimit && velocity.y < 0f && groundInfo.Tag != "Slope")
+        if (forceWaistRotation)
         {
-            Vector3 slopeRight = Vector3.Cross(Vector3.up, groundInfo.Normal).normalized;
-            Vector3 slopeDirection = Vector3.Cross(slopeRight, groundInfo.Normal).normalized;
+            waistBone.rotation = waistRotation;
 
-            Debug.DrawRay(transform.position, slopeDirection, Color.red);
-
-            Quaternion rotater = Quaternion.FromToRotation(velocity.normalized, slopeDirection);
-
-            velocity = Vector3.ProjectOnPlane(velocity, groundInfo.Normal);
+            // Correction for faulty bone
+            // IF NEW MODEL CAUSES ISSUES, MESS WITH THIS
+            waistBone.rotation = Quaternion.Euler(
+                waistBone.eulerAngles.x - 90f, waistBone.eulerAngles.y,
+                waistBone.eulerAngles.z);
         }
     }
 
     private void CheckForGround()
     {
-
         if (groundInfo.Angle > charControl.slopeLimit && groundInfo.Tag != "Slope")
             isGrounded = false;
         else
@@ -177,7 +193,7 @@ public class PlayerController : MonoBehaviour
         // its not always available and player gets stuck if its not so we still use collider hit
 
         RaycastHit hit;
-        
+
         float castDist = charControl.stepOffset + charControl.skinWidth + charControl.radius;
 
         Vector3 centerStart = transform.position + Vector3.up * charControl.radius;
@@ -196,7 +212,7 @@ public class PlayerController : MonoBehaviour
             }
             else
             {
-                float maxHeight = considerStepOffset ? charControl.stepOffset : 0.1f;
+                float maxHeight = groundedOnSteps ? charControl.stepOffset : charControl.skinWidth;
 
                 // allows player to run of steps properly
                 if (groundInfo.Distance <= maxHeight)
@@ -207,6 +223,8 @@ public class PlayerController : MonoBehaviour
         anim.SetBool("isGrounded", isGrounded);
         anim.SetFloat("groundDistance", groundInfo.Distance);
         anim.SetFloat("groundAngle", groundInfo.Angle);
+
+        smallestY = 0f;
     }
 
     float smallestY = 0f;
@@ -214,9 +232,9 @@ public class PlayerController : MonoBehaviour
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
         if (hit.normal.y < 0f)
-            return; // normal is pointing down so mustn't be ground
+            return;  // Normal is pointing down so mustn't be ground
 
-        if (hit.normal.y >= smallestY)
+        if (hit.normal.y > smallestY)
         {
             groundInfo.Distance = transform.position.y - hit.point.y;
             groundInfo.Angle = UMath.GroundAngle(hit.normal);
@@ -225,6 +243,40 @@ public class PlayerController : MonoBehaviour
 
             smallestY = hit.normal.y;
         }
+    }
+
+    private void ApplyGravity()
+    {
+        if (!useGravity)
+        {
+            return;
+        }
+        else if (isGrounded)
+        {
+            // Keeps player grounded properly
+            verticalSpeed = -gravity;
+        }
+
+        verticalSpeed -= gravity * Time.deltaTime;
+
+        verticalSpeed = Mathf.Clamp(verticalSpeed, -terminalVelocity, terminalVelocity);
+    }
+
+    // Method that stops player landing on non-slideable slopes
+    private void SlideOffSlopeLimit()
+    {
+        if (groundInfo.Angle > charControl.slopeLimit && velocity.y < 0f && groundInfo.Tag != "Slope")
+        { 
+            movementOffset = Vector3.ProjectOnPlane(movementOffset, groundInfo.Normal);
+        }
+    }
+
+    private void BuildMovementOffset()
+    {
+        movementOffset = (useRootMotion ? Vector3.zero : velocity) + (Vector3.up * verticalSpeed);
+
+        // Keeps movement frame independent
+        movementOffset *= Time.deltaTime;
     }
 
     private void OnAnimatorIK()
@@ -236,59 +288,9 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void DisableRagdoll()
-    {
-        foreach (Rigidbody rb in ragRigidBodies)
-        {
-            rb.isKinematic = true;
-            rb.useGravity = false;
-            rb.gameObject.GetComponent<Collider>().enabled = false;
-        }
-    }
-
-    public void EnableRagdoll()
-    {
-        foreach (Rigidbody rb in ragRigidBodies)
-        {
-            rb.isKinematic = false;
-            rb.useGravity = true;
-            rb.gameObject.GetComponent<Collider>().enabled = true;
-        }
-    }
-
-    private void LateUpdate()
-    {
-        if (forceWaistRotation)
-        {
-            waistBone.rotation = waistRotation;
-
-            // Correction for faulty bone
-            // IF NEW MODEL CAUSES ISSUES MESS WITH THIS
-            waistBone.rotation = Quaternion.Euler(
-                waistBone.eulerAngles.x - 90f, waistBone.eulerAngles.y,
-                waistBone.eulerAngles.z);
-        }
-    }
-
-    public void AnimWait(float seconds)
-    {
-        StartCoroutine(StopDrop(seconds));
-    }
-
     public void MoveWait(Vector3 point, Quaternion rotation, float tRate = 1f, float rRate = 1f)
     {
         StartCoroutine(MoveTo(point, rotation, tRate, rRate));
-    }
-
-    private IEnumerator StopDrop(float secs)
-    {
-        float startTime = Time.time;
-        anim.SetBool("isWaiting", true);
-        while (Time.time - startTime < secs)
-        {
-            yield return null;
-        }
-        anim.SetBool("isWaiting", false);
     }
 
     private IEnumerator MoveTo(Vector3 point, Quaternion rotation, float tRate = 1f, float rRate = 1f)
@@ -332,7 +334,7 @@ public class PlayerController : MonoBehaviour
 
         transform.position = point;
         transform.rotation = rotation;
-        velocity = Vector3.zero;
+        StopMoving();
 
         isMovingAuto = false;
         anim.SetBool("isWaiting", false);
@@ -346,6 +348,24 @@ public class PlayerController : MonoBehaviour
 
         anim.SetFloat("AnimTime", animTime);  // Used for determining certain transitions
     }
+
+    private Vector3 VelocityToLocal(Vector3 vel)
+    {
+        Vector3 camForward = cam.forward;
+        camForward.y = 0f;
+        camForward.Normalize();
+
+        return Quaternion.FromToRotation(camForward, transform.forward) * vel;
+    }
+
+    private Vector3 VelocityToGlobal(Vector3 vel)
+    {
+        return cam.TransformVector(vel);
+    }
+
+    #endregion
+
+    #region Public Methods
 
     public Vector3 RawTargetVector(float speed = 1f, bool cameraRelative = false)
     {
@@ -365,9 +385,25 @@ public class PlayerController : MonoBehaviour
         return directInput;
     }
 
-    public void MoveGrounded(float speed, bool pushDown = true, float smoothing = 8f)
+    public void ImpulseVelocity(Vector3 vel, bool reset = true)
     {
-        Vector3 targetVector = RawTargetVector(speed);
+        if (reset)
+            StopMoving();
+
+        velocity += Vector3.Scale(vel, new Vector3(1f, 0f, 1f));
+        verticalSpeed += vel.y;
+    }
+
+    public void StopMoving()
+    {
+        velocity = Vector3.zero;
+        localVelocity = Vector3.zero;
+        verticalSpeed = 0f;
+    }
+
+    public void MoveGrounded()
+    {
+        Vector3 targetVector = RawTargetVector(runSpeed);
 
         targetAngle = Vector3.SignedAngle(Vector3.forward, targetVector.normalized, Vector3.up);
         targetSpeed = UMath.GetHorizontalMag(targetVector);
@@ -383,21 +419,19 @@ public class PlayerController : MonoBehaviour
             camForward.y = 0f;
             camForward.Normalize();
 
+            // Finds correct forward direction for local velocity
             localVelocity = Quaternion.FromToRotation(camForward, transform.forward) * (Vector3.forward * 0.1f);
         }
 
         if (Mathf.Abs(targetVector.magnitude - localVelocity.magnitude) < 0.1f && Vector3.Angle(localVelocity, targetVector) < 1f)
             localVelocity = targetVector;
         else
-            localVelocity = Vector3.Slerp(localVelocity, targetVector, Time.deltaTime * smoothing);
+            localVelocity = Vector3.Slerp(localVelocity, targetVector, Time.deltaTime * speedChangeRate);
 
         velocity = Quaternion.Euler(0f, cam.eulerAngles.y, 0f) * localVelocity;
 
         float actualSpeed = direction * UMath.GetHorizontalMag(velocity);
         anim.SetFloat("Speed", actualSpeed);
-
-        if (pushDown)
-            velocity.y = -gravity;  // so charControl is grounded consistently
     }
 
     // Move on all axis not just horizontally
@@ -422,21 +456,6 @@ public class PlayerController : MonoBehaviour
         anim.SetFloat("TargetSpeed", targetVector.magnitude);
     }
 
-    Vector3 extraMovement = Vector3.zero;
-
-    public void MoveInDirection(float speed, Vector3 dir, float smoothing = 4f, float maxTurnAngle = 24f)
-    {
-        Vector3 targetVector = dir * speed;
-
-        if (extraMovement.magnitude < 0.1f && targetVector.magnitude > 0f)
-            extraMovement = transform.forward * 0.1f;  // Player will rotate smoothly from idle
-
-        extraMovement = Vector3.Lerp(extraMovement, targetVector, Time.deltaTime * smoothing);
-        velocity += extraMovement;
-
-        anim.SetFloat("Speed", velocity.magnitude);
-    }
-
     public void RotateToCamera()
     {
         if (UMath.GetHorizontalMag(velocity) > 0.1f)
@@ -453,6 +472,7 @@ public class PlayerController : MonoBehaviour
             return;
 
         Quaternion target = Quaternion.Euler(0.0f, Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg, 0.0f);
+
         if (smoothing == 0f)
             transform.rotation = target;
         else
@@ -505,27 +525,23 @@ public class PlayerController : MonoBehaviour
         if (velocity.magnitude < 0.1f)
             return;
 
+        Quaternion target = Quaternion.LookRotation(velocity);
+
         if (smoothing == 0f)
-            transform.rotation = Quaternion.LookRotation(velocity);
+            transform.rotation = target;
         else
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(velocity),
-                smoothing * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, target, smoothing * Time.deltaTime);
     }
 
     public void RotateToTarget(Vector3 target)
     {
-        Vector3 direction = Vector3.Scale((target - transform.position), new Vector3(1.0f, 0.0f, 1.0f));
+        Vector3 direction = Vector3.Scale(target - transform.position, new Vector3(1.0f, 0.0f, 1.0f));
         transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
     }
 
-    public void ApplyGravity(float amount)
+    public void MinimizeCollider()
     {
-        velocity.y -= amount * Time.deltaTime;
-    }
-
-    public void MinimizeCollider(float size = 0f)
-    {
-        charControl.radius = size;
+        charControl.radius = 0f;
     }
 
     public void MaximizeCollider()
@@ -543,6 +559,8 @@ public class PlayerController : MonoBehaviour
         charControl.enabled = true;
     }
 
+    #endregion
+
     #region Public Properties
 
     public StateMachine<PlayerController> StateMachine
@@ -555,9 +573,14 @@ public class PlayerController : MonoBehaviour
         get { return upperStateMachine; }
     }
 
-    public CharacterController Controller
+    public CharacterController CharControl
     {
         get { return charControl; }
+    }
+
+    public CameraController CamControl
+    {
+        get { return camController; }
     }
 
     public Transform Cam
@@ -588,6 +611,11 @@ public class PlayerController : MonoBehaviour
         get { return anim; }
     }
 
+    public PlayerInput Inputf
+    {
+        get { return playerInput; }
+    }
+
     public PlayerSFX SFX
     {
         get { return playerSFX; }
@@ -603,15 +631,51 @@ public class PlayerController : MonoBehaviour
         get { return weaponManager; }
     }
 
+    public GroundInfo Ground
+    {
+        get { return groundInfo; }
+    }
+
     public bool Grounded
     {
         get { return isGrounded; }
     }
 
-    public bool ConsiderStepOffset
+    public bool IsMovingAuto
     {
-        get { return considerStepOffset; }
-        set { considerStepOffset = value; }
+        get { return isMovingAuto; }
+    }
+
+    public bool AutoLedgeTarget
+    {
+        get { return autoLedgeTarget; }
+    }
+
+    public bool UseGravity
+    {
+        get { return useGravity; }
+        set
+        {
+            useGravity = value;
+
+            if (useGravity == false)
+                verticalSpeed = 0f;
+        }
+    }
+
+    public bool UseRootMotion
+    {
+        get { return useRootMotion; }
+        set
+        {
+            useRootMotion = anim.applyRootMotion = value;
+        }
+    }
+
+    public bool GroundedOnSteps
+    {
+        get { return groundedOnSteps; }
+        set { groundedOnSteps = value; }
     }
 
     public bool ForceWaistRotation
@@ -626,9 +690,29 @@ public class PlayerController : MonoBehaviour
         set { forceHeadLook = value; }
     }
 
+    public float Gravity
+    {
+        get { return gravity; }
+    }
+
+    public float JumpHeight
+    {
+        get { return jumpHeight; }
+    }
+
     public float JumpYVel
     {
         get { return jumpYVel; }
+    }
+
+    public float RunJumpVel
+    {
+        get { return runJumpVel; }
+    }
+
+    public float StandJumpVel
+    {
+        get { return standJumpVel; }
     }
 
     public float DamageVelocity
@@ -641,11 +725,6 @@ public class PlayerController : MonoBehaviour
         get { return deathVelocity; }
     }
 
-    public GroundInfo Ground
-    {
-        get { return groundInfo; }
-    }
-
     public float TargetAngle
     {
         get { return targetAngle; }
@@ -656,16 +735,45 @@ public class PlayerController : MonoBehaviour
         get { return targetSpeed;  }
     }
 
+    public float HangUpOffset
+    {
+        get { return hangUpOffset; }
+    }
+
+    public float HangForwardOffset
+    {
+        get { return hangForwardOffset; }
+    }
+
+    public float GrabUpOffset
+    {
+        get { return grabUpOffset; }
+    }
+
+    public float GrabForwardOffset
+    {
+        get { return grabForwardOffset; }
+    }
+
     public Vector3 Velocity
     {
         get { return velocity; }
-        set { velocity = value; }
+        set
+        {
+            velocity = value;
+            localVelocity = VelocityToLocal(value);
+        }
     }
 
     public Vector3 LocalVelocity
     {
         get { return localVelocity; }
-        set { localVelocity = value; }
+        set
+        {
+            localVelocity = value;
+            velocity = VelocityToGlobal(value);
+        }
     }
+
     #endregion
 }

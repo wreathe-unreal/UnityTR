@@ -23,7 +23,7 @@ public class Combat : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (!Input.GetKey(player.playerInput.drawWeapon) && Input.GetAxisRaw("CombatTrigger") < 0.1f)
+        if (!Input.GetKey(player.Inputf.drawWeapon) && Input.GetAxisRaw("CombatTrigger") < 0.1f)
         {
             player.StateMachine.GoToState<Locomotion>();
             return;
@@ -56,16 +56,13 @@ public class Combat : StateBase<PlayerController>
 
         if (player.Grounded)
         {
-            if (Input.GetKeyDown(player.playerInput.jump))
+            if (Input.GetKeyDown(player.Inputf.jump))
             {
                 player.StateMachine.GoToState<CombatJumping>();
                 return;
             }
 
-            float moveSpeed = Input.GetKey(player.playerInput.walk) ? player.walkSpeed
-            : player.runSpeed;
-
-            player.MoveGrounded(moveSpeed);
+            player.MoveGrounded();
             if (player.TargetSpeed > 1f)
                 player.RotateToVelocityStrafe();
             else
@@ -77,11 +74,7 @@ public class Combat : StateBase<PlayerController>
                 }
             }
         }
-        else
-        {
-            player.ApplyGravity(player.gravity);
-        }
 
-        player.camController.State = (player.Weapons.target == null ? CameraState.Grounded : CameraState.Combat);
+        player.CamControl.State = (player.Weapons.target == null ? CameraState.Grounded : CameraState.Combat);
     }
 }

@@ -39,8 +39,8 @@ class Freeclimb : StateBase<PlayerController>
     {
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
 
-        right = Input.GetAxis(player.playerInput.horizontalAxis);
-        forward = Input.GetAxis(player.playerInput.verticalAxis);
+        right = Input.GetAxis(player.Inputf.horizontalAxis);
+        forward = Input.GetAxis(player.Inputf.verticalAxis);
 
         if (isInCornering || isOutCornering)
         {
@@ -69,7 +69,7 @@ class Freeclimb : StateBase<PlayerController>
             return;
         }
 
-        if (Input.GetKeyDown(player.playerInput.crouch))
+        if (Input.GetKeyDown(player.Inputf.crouch))
         {
             player.Anim.SetTrigger("LetGo");
             player.StateMachine.GoToState<InAir>();
@@ -126,7 +126,7 @@ class Freeclimb : StateBase<PlayerController>
         if (right == 0f)
             return CornerType.Continue;
 
-        float upOffset = player.charControl.height * 0.75f;
+        float upOffset = player.CharControl.height * 0.75f;
         LedgeInfo ledgeInfo;
 
         // Tests if something is in way of dir

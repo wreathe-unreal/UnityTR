@@ -22,12 +22,12 @@ public class UpperCombat : StateBase<PlayerController>
         player.Anim.SetBool("isFiring", false);
         player.Weapons.HoldingCurrentWeapon(true);
         player.ForceWaistRotation = true;
-        player.camController.LookAt = player.Weapons.target;
+        player.CamControl.LookAt = player.Weapons.target;
     }
 
     public override void OnExit(PlayerController player)
     {
-        player.camController.LookAt = null;
+        player.CamControl.LookAt = null;
         player.ForceWaistRotation = false;
         player.Anim.SetBool("isCombat", false);
         player.Anim.SetBool("isTargetting", false);
@@ -39,7 +39,7 @@ public class UpperCombat : StateBase<PlayerController>
     public override void Update(PlayerController player)
     {
         if (player.StateMachine.IsInState<Dead>() ||
-            (!Input.GetKey(player.playerInput.drawWeapon) && Input.GetAxisRaw("CombatTrigger") < 0.1f))
+            (!Input.GetKey(player.Inputf.drawWeapon) && Input.GetAxisRaw("CombatTrigger") < 0.1f))
         {
             player.UpperStateMachine.GoToState<Empty>();
             return;
@@ -55,7 +55,7 @@ public class UpperCombat : StateBase<PlayerController>
         float aimAngle = Vector3.SignedAngle(aimDirection, player.transform.forward, Vector3.up);
 
         player.Anim.SetFloat("AimAngle", aimAngle);
-        player.Anim.SetBool("isFiring", Input.GetKey(player.playerInput.fireWeapon));
+        player.Anim.SetBool("isFiring", Input.GetKey(player.Inputf.fireWeapon));
 
         // Stops player's waist wobbling
         player.WaistRotation = player.transform.rotation;
@@ -69,7 +69,7 @@ public class UpperCombat : StateBase<PlayerController>
         {
             if (c.gameObject.CompareTag("Enemy"))
             {
-                player.camController.LookAt = player.Weapons.target = c.gameObject.transform;
+                player.CamControl.LookAt = player.Weapons.target = c.gameObject.transform;
                 break;
             }
             else

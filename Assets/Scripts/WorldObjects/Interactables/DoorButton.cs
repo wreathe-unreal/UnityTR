@@ -35,7 +35,7 @@ public class DoorButton : Interactable
         Animator anim = player.GetComponent<Animator>();
         anim.Play("PushButton");
 
-        while (player.isMovingAuto)
+        while (player.IsMovingAuto)
             yield return null;
 
         targetDoor.PlayDoorOpen();
@@ -48,6 +48,6 @@ public class DoorButton : Interactable
         }
 
         isUsed = true;
-        player.StateMachine.SuspendUpdate(false);
+        player.StateMachine.SuspendUpdate();
     }
 }

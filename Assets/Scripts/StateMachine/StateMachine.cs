@@ -9,22 +9,22 @@ public class StateMachine<T>
 
     private readonly T owner;
     private StateBase<T> currentState;
-    private Dictionary<string, StateBase<T>> possibleStates;
+    private Dictionary<string, StateBase<T>> allStates;
 
     public StateMachine(T owner)
     {
         this.owner = owner;
-        possibleStates = new Dictionary<string, StateBase<T>>();
+        allStates = new Dictionary<string, StateBase<T>>();
     }
 
     public void AddState(StateBase<T> state)
     {
-        possibleStates.Add(GetStateName(state), state);
+        allStates.Add(GetStateName(state), state);
     }
 
     public void RemoveState(StateBase<T> state)
     {
-        possibleStates.Remove(GetStateName(state));
+        allStates.Remove(GetStateName(state));
     }
 
     public bool IsInState<TState>()
@@ -39,7 +39,7 @@ public class StateMachine<T>
         if (currentState != null)
             currentState.OnExit(owner);
 
-        if (possibleStates.TryGetValue(stateType, out currentState))
+        if (allStates.TryGetValue(stateType, out currentState))
         {
             currentState.OnEnter(owner);
             return;
@@ -55,7 +55,7 @@ public class StateMachine<T>
         if (currentState != null)
             currentState.OnExit(owner);
 
-        if (possibleStates.TryGetValue(stateType, out currentState))
+        if (allStates.TryGetValue(stateType, out currentState))
         {
             currentState.ReceiveContext(context);
             currentState.OnEnter(owner);
@@ -73,15 +73,19 @@ public class StateMachine<T>
         currentState.Update(owner);
     }
 
-    public void SuspendUpdate(bool suspend = true)
+    public void SuspendUpdate()
     {
-        suspendUpdate = suspend;
+        suspendUpdate = true;
 
-        if (suspend)
-            currentState.OnSuspend(owner);
-        else
-            currentState.OnUnsuspend(owner);
-    } 
+        currentState.OnSuspend(owner);
+    }
+
+    public void UnsuspendUpdate()
+    {
+        suspendUpdate = false;
+
+        currentState.OnUnsuspend(owner);
+    }
 
     private string GetStateName(StateBase<T> state)
     {

@@ -13,7 +13,7 @@ class Grabbing : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
-        player.MinimizeCollider(0.01f);
+        player.MinimizeCollider();
 
         lastPos = player.transform.position;
 
@@ -33,8 +33,6 @@ class Grabbing : StateBase<PlayerController>
 
         player.Anim.SetFloat("YSpeed", player.Velocity.y);
 
-        player.ApplyGravity(player.gravity);
-
         if (player.Velocity.y < -10f)
         {
             player.StateMachine.GoToState<InAir>();
@@ -48,7 +46,7 @@ class Grabbing : StateBase<PlayerController>
     {
         RaycastHit hit;
         Vector3 startPos = new Vector3(player.transform.position.x,
-            player.transform.position.y + (animState.IsName("Reach") ? player.grabUpOffset : 1.975f),
+            player.transform.position.y + (animState.IsName("Reach") ? player.GrabUpOffset : 1.975f),
             player.transform.position.z);
 
         // If Lara's position changes too fast, can miss ledges
@@ -58,8 +56,8 @@ class Grabbing : StateBase<PlayerController>
         // Checks if there is a ledge to grab
         if (ledgeDetector.FindLedgeAtPoint(startPos, player.transform.forward, 0.25f, deltaH, out ledgeInfo))
         {
-            grabPoint = ledgeInfo.Point - player.transform.forward * player.hangForwardOffset;
-            grabPoint.y = ledgeInfo.Point.y - player.hangUpOffset;
+            grabPoint = ledgeInfo.Point - player.transform.forward * player.HangForwardOffset;
+            grabPoint.y = ledgeInfo.Point.y - player.HangUpOffset;
 
             player.transform.position = grabPoint;
             Quaternion ledgeRot = Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up);

@@ -13,9 +13,12 @@ public class InAir : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
-        player.camController.State = CameraState.Grounded;
+        Debug.Log("enter air");
 
-        player.Anim.applyRootMotion = false;
+        player.CamControl.State = CameraState.Grounded;
+
+        player.UseGravity = true;
+        player.UseRootMotion = false;
 
         screamed = false;
 
@@ -24,6 +27,8 @@ public class InAir : StateBase<PlayerController>
 
     public override void OnExit(PlayerController player)
     {
+        Debug.Log("leave air");
+
         player.Anim.SetBool("isAir", false);
         player.Anim.SetBool("isJumping", false);
         player.Anim.SetBool("isGrabbing", false);
@@ -42,10 +47,8 @@ public class InAir : StateBase<PlayerController>
 
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
 
-        player.ApplyGravity(player.gravity);
-
         player.Anim.SetFloat("YSpeed", player.Velocity.y);
-        float targetSpeed = UMath.GetHorizontalMag(player.RawTargetVector() * player.runSpeed);
+        float targetSpeed = UMath.GetHorizontalMag(player.RawTargetVector());
         player.Anim.SetFloat("TargetSpeed", targetSpeed);
 
         if (player.Grounded)
@@ -66,8 +69,8 @@ public class InAir : StateBase<PlayerController>
                     player.Anim.SetTrigger(animState.IsName("Dive") ? "DiveLand" : "HardLand");
 
                     // Stops player moving forward on landing
-                    if (Input.GetAxisRaw(player.playerInput.verticalAxis) < 0.1f && Input.GetAxisRaw(player.playerInput.horizontalAxis) < 0.1f)
-                        player.Velocity = Vector3.down * player.gravity;
+                    if (Input.GetAxisRaw(player.Inputf.verticalAxis) < 0.1f && Input.GetAxisRaw(player.Inputf.horizontalAxis) < 0.1f)
+                        player.Velocity = Vector3.down * player.Gravity;
 
                     player.StateMachine.GoToState<Locomotion>();
                 }
@@ -81,15 +84,15 @@ public class InAir : StateBase<PlayerController>
                 player.Anim.SetTrigger(animState.IsName("Dive") ? "DiveLand" : "Land");
 
                 // Stops player moving forward on landing
-                if (Input.GetAxisRaw(player.playerInput.verticalAxis) < 0.1f && Input.GetAxisRaw(player.playerInput.horizontalAxis) < 0.1f)
-                    player.Velocity = Vector3.down * player.gravity;
+                if (Input.GetAxisRaw(player.Inputf.verticalAxis) < 0.1f && Input.GetAxisRaw(player.Inputf.horizontalAxis) < 0.1f)
+                    player.Velocity = Vector3.down * player.Gravity;
                 
                 player.StateMachine.GoToState<Locomotion>();
             }
             return;
                 
         } 
-        else if (Input.GetKeyDown(player.playerInput.action) && !player.Anim.GetBool("isDive"))
+        else if (Input.GetKeyDown(player.Inputf.action) && !player.Anim.GetBool("isDive"))
         {
             if (!player.UpperStateMachine.IsInState<UpperCombat>())
             {
@@ -97,7 +100,7 @@ public class InAir : StateBase<PlayerController>
                 return;
             }
         }
-        else if (Input.GetKey(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
+        else if (Input.GetKey(player.Inputf.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
         {
             player.UpperStateMachine.GoToState<UpperCombat>();
         }
@@ -105,16 +108,16 @@ public class InAir : StateBase<PlayerController>
 
     private void AutoLedgeCheck(PlayerController player)
     {
-        Vector3 startPos = player.transform.position + Vector3.up * player.charControl.height;
+        Vector3 startPos = player.transform.position + Vector3.up * player.CharControl.height;
 
         // If Lara's position changes too fast, can miss ledges
         float deltaH = Mathf.Max(Mathf.Abs(player.transform.position.y - lastPos.y), 0.12f);
 
         LedgeInfo ledgeInfo;
-        if (player.autoLedgeTarget && ledgeDetector.FindLedgeAtPoint(startPos, player.transform.forward, 0.25f, deltaH, out ledgeInfo))
+        if (player.AutoLedgeTarget && ledgeDetector.FindLedgeAtPoint(startPos, player.transform.forward, 0.25f, deltaH, out ledgeInfo))
         {
-            grabPoint = ledgeInfo.Point - player.transform.forward * player.hangForwardOffset;
-            grabPoint.y = ledgeInfo.Point.y - player.hangUpOffset;
+            grabPoint = ledgeInfo.Point - player.transform.forward * player.HangForwardOffset;
+            grabPoint.y = ledgeInfo.Point.y - player.HangUpOffset;
 
             player.transform.position = grabPoint;
             Quaternion ledgeRot = Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up);

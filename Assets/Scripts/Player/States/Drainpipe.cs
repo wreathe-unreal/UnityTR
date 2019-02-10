@@ -36,7 +36,7 @@ public class Drainpipe : StateBase<PlayerController>
             return;
         }
 
-        if (Input.GetKeyDown(player.playerInput.crouch))
+        if (Input.GetKeyDown(player.Inputf.crouch))
         {
             //player.transform.position = player.transform.position - player.transform.forward * 0.2f;
             player.Anim.SetTrigger("LetGo");
@@ -45,8 +45,8 @@ public class Drainpipe : StateBase<PlayerController>
             return;
         }
 
-        float forward = Input.GetAxisRaw(player.playerInput.verticalAxis);
-        float right = Input.GetAxisRaw(player.playerInput.horizontalAxis);
+        float forward = Input.GetAxisRaw(player.Inputf.verticalAxis);
+        float right = Input.GetAxisRaw(player.Inputf.horizontalAxis);
 
         if (player.transform.position.y > 
             (DPipe.CURRENT_DPIPE.transform.position.y 

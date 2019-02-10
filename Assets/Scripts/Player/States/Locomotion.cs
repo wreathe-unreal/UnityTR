@@ -8,23 +8,22 @@ public class Locomotion : StateBase<PlayerController>
     private bool waitingBool = false;  // avoids early reset of root mtn
     private bool isTransitioning = false;
     private bool isStairs = false;
-    private float speed = 0f;
 
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
     private LedgeInfo ledgeInfo;
 
     public override void OnEnter(PlayerController player)
     {
-        player.camController.State = CameraState.Grounded;
-        player.camController.LAUTurning = true;
+        player.CamControl.State = CameraState.Grounded;
+        player.CamControl.LAUTurning = true;
 
         player.EnableCharControl();
-        player.ConsiderStepOffset = true;
+        player.GroundedOnSteps = true;
 
         player.Anim.SetBool("isJumping", false);
         player.Anim.SetBool("isLocomotion", true);
         player.Anim.SetFloat("YSpeed", 0f);
-        player.Anim.applyRootMotion = true;
+        player.UseRootMotion = true;
 
         isTransitioning = false;
         isRootMotion = false;
@@ -32,21 +31,21 @@ public class Locomotion : StateBase<PlayerController>
 
     public override void OnExit(PlayerController player)
     {
-        player.ConsiderStepOffset = false;
+        player.GroundedOnSteps = false;
 
-        player.camController.LAUTurning = false;
+        player.CamControl.LAUTurning = false;
 
         player.Anim.SetBool("isLocomotion", false);
     }
 
     public override void OnSuspend(PlayerController player)
     {
-        player.camController.LAUTurning = false;
+        player.CamControl.LAUTurning = false;
     }
 
     public override void OnUnsuspend(PlayerController player)
     {
-        player.camController.LAUTurning = true;
+        player.CamControl.LAUTurning = true;
     }
 
     public override void Update(PlayerController player)
@@ -54,7 +53,7 @@ public class Locomotion : StateBase<PlayerController>
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
         AnimatorTransitionInfo transInfo = player.Anim.GetAnimatorTransitionInfo(0);
 
-        if (player.isMovingAuto)
+        if (player.IsMovingAuto)
             return;
 
         if (isTransitioning)
@@ -62,8 +61,8 @@ public class Locomotion : StateBase<PlayerController>
             if (animState.IsName("HangLoop") || animState.IsName("Grab"))
             {
                 player.transform.position = ledgeInfo.Point 
-                    - ledgeInfo.Direction * player.hangForwardOffset
-                    - Vector3.up * player.hangUpOffset;
+                    - ledgeInfo.Direction * player.HangForwardOffset
+                    - Vector3.up * player.HangUpOffset;
                 player.Anim.ResetTrigger("ToLedgeForward");
                 player.LocalVelocity = Vector3.zero;
                 player.StateMachine.GoToState<Climbing>();
@@ -71,8 +70,8 @@ public class Locomotion : StateBase<PlayerController>
             else if (animState.IsName("LedgeOffFront") || animState.IsName("LastChanceGrab"))
             {
                 player.Anim.MatchTarget(ledgeInfo.Point
-                    - ledgeInfo.Direction * player.hangForwardOffset
-                    - Vector3.up * player.hangUpOffset,
+                    - ledgeInfo.Direction * player.HangForwardOffset
+                    - Vector3.up * player.HangUpOffset,
                 Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up),
                 AvatarTarget.Root,
                 new MatchTargetWeightMask(Vector3.one, 1f),
@@ -104,7 +103,7 @@ public class Locomotion : StateBase<PlayerController>
             player.StateMachine.GoToState<Sliding>();
             return;
         }
-        else if (Input.GetKey(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
+        else if (Input.GetKey(player.Inputf.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
         {
             if (player.Weapons.currentWeapon != null)
             {
@@ -130,18 +129,15 @@ public class Locomotion : StateBase<PlayerController>
             player.Anim.SetFloat("Stairs", 0f, 0.1f, Time.deltaTime);
         }
 
-        float moveSpeed = Input.GetKey(player.playerInput.walk) ? player.walkSpeed
-            : player.runSpeed;
+        player.MoveGrounded();
 
-        speed = Mathf.Lerp(speed, moveSpeed, Time.deltaTime * 10f);
-
-        player.MoveGrounded(moveSpeed);
         if (player.TargetSpeed > 1f && !isRootMotion)
             player.RotateToVelocityGround();
+
         HandleLedgeStepMotion(player);
         LookForStepLedges(player);
 
-        if (Input.GetKeyDown(player.playerInput.crouch))
+        if (Input.GetKeyDown(player.Inputf.crouch))
         {
             Vector3 start = player.transform.position
                 + player.transform.forward * .75f
@@ -160,12 +156,13 @@ public class Locomotion : StateBase<PlayerController>
             return;
         }
 
-        if (Input.GetKeyDown(player.playerInput.jump) && !isRootMotion)
+        if (Input.GetKeyDown(player.Inputf.jump) && !isRootMotion)
         {
             if (animState.IsName("RunWalk") || animState.IsName("IdleToRun"))
-                player.Anim.applyRootMotion = false;
+            {
+                player.UseRootMotion = false;
+            }
 
-            player.LocalVelocity = Vector3.zero;
             player.StateMachine.GoToState<Jumping>();
         }
     }
@@ -182,7 +179,7 @@ public class Locomotion : StateBase<PlayerController>
                 float height = ledgeInfo.Point.y - player.transform.position.y;
 
                 // step can be runned over
-                if (height < player.charControl.stepOffset)
+                if (height < player.CharControl.stepOffset)
                 {
                     isRootMotion = false;
                     return;

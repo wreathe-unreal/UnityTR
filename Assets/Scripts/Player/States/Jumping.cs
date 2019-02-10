@@ -17,7 +17,9 @@ public class Jumping : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
-        player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
+        player.GroundedOnSteps = false;  // Allows player to leave ground
+        player.UseGravity = false;  // Allows ghosting over edges
+
         player.Anim.SetBool("isJumping", true);
     }
 
@@ -27,6 +29,7 @@ public class Jumping : StateBase<PlayerController>
         {
             string msg = (string)context;
 
+            // Stops player jumping backwards on slides etc...
             if (msg.Equals("Slide"))
             {
                 noRotate = true;
@@ -36,6 +39,8 @@ public class Jumping : StateBase<PlayerController>
 
     public override void OnExit(PlayerController player)
     {
+        player.UseGravity = true;
+
         noRotate = false;
         hasJumped = false;
         isGrabbing = false;
@@ -53,7 +58,7 @@ public class Jumping : StateBase<PlayerController>
 
         bool isDive = player.Anim.GetBool("isDive");
 
-        if (!player.autoLedgeTarget && Input.GetKey(player.playerInput.action) && !isDive)
+        if (!player.AutoLedgeTarget && Input.GetKey(player.Inputf.action) && !isDive)
         {
             isGrabbing = true;
         }
@@ -61,11 +66,11 @@ public class Jumping : StateBase<PlayerController>
         // Allows player to smoothly turn round during stand jump
         if ((animState.IsName("Still_Compress_Forward") || animState.IsName("Compress")) && !noRotate && !hasJumped)
         {
-            player.MoveGrounded(targetSpeed, false);
+            player.MoveGrounded();
             player.RotateToVelocityGround();
         }
 
-        if (Input.GetKey(player.playerInput.crouch) && !hasJumped)
+        if (Input.GetKey(player.Inputf.crouch) && !hasJumped)
         {
             player.Anim.SetBool("isDive", true);
             isDive = true;
@@ -77,33 +82,34 @@ public class Jumping : StateBase<PlayerController>
 
         if ((isRunJump|| isStandJump || isJumpUp) && !hasJumped)
         {
-            player.Anim.applyRootMotion = false;
+            player.UseRootMotion = false;
 
-            float zVel = isRunJump ? player.runJumpVel
-                : isStandJump ? player.standJumpVel
+            float zVel = isRunJump ? player.RunJumpVel
+                : isStandJump ? player.StandJumpVel
                 : 0.1f;
             float yVel = player.JumpYVel;
 
-            // Snaps stand forward jump to right direction
+            // Snaps stand forward jump to right direction (more responsive)
             if (isStandJump && !noRotate)
             {
                 Quaternion rotationTarget = Quaternion.LookRotation(player.RawTargetVector(1f, true), Vector3.up);
                 player.transform.rotation = rotationTarget;
             }
 
-            if (player.autoLedgeTarget && !isDive)
+            // Checks for ledges
+            if (player.AutoLedgeTarget && !isDive)
             {
                 ledgesDetected = ledgeDetector.FindLedgeJump(player.transform.position + Vector3.down * 2.5f,
-                    player.transform.forward, 6.2f, 2.5f + player.jumpHeight + player.grabUpOffset, out ledgeInfo);
+                    player.transform.forward, 6.2f, 2.5f + player.JumpHeight + player.GrabUpOffset, out ledgeInfo);
 
-                if (ledgesDetected && TrySetVelocity(player, zVel, ref yVel))
+                if (ledgesDetected && TryReachLedge(player, zVel, ref yVel))
                 {
-                    return;
+                    return;  // Can reach ledge - ignore code left in this state
                 }
                 else
                 {
                     // Check for monkeys and poles
-                    Vector3 start = player.transform.position + Vector3.up * player.charControl.height;
+                    Vector3 start = player.transform.position + Vector3.up * player.CharControl.height;
                     Vector3 dir = isJumpUp ? Vector3.up : player.transform.forward + Vector3.up;
                     ledgesDetected = ledgeDetector.FindAboveHead(start, dir, 4f, out ledgeInfo);
 
@@ -115,7 +121,7 @@ public class Jumping : StateBase<PlayerController>
                 }
             }
 
-            player.Velocity = player.transform.forward * zVel + Vector3.up * yVel;
+            player.ImpulseVelocity(player.transform.forward * zVel + Vector3.up * yVel);
 
             hasJumped = true;
         }
@@ -134,15 +140,15 @@ public class Jumping : StateBase<PlayerController>
         }
     }
 
-    private bool TrySetVelocity(PlayerController player, float zVel, ref float yVel, bool canClear = true)
+    private bool TryReachLedge(PlayerController player, float zVel, ref float yVel, bool canClear = true)
     {
         // Need to check where player will be relative to ledge
-        float timeAtPeak = yVel / player.gravity;  // v = u + at
+        float timeAtPeak = yVel / player.Gravity;  // v = u + at
         Vector3 relative = ledgeInfo.Point - player.transform.position;
         float displacement = UMath.GetHorizontalMag(relative);
         // Maximum to account for when player hits wall but keeps moving up
         float timeAtLedge = Mathf.Max(UMath.TimeAtHorizontalPoint(zVel, displacement), timeAtPeak);
-        float vertPos = UMath.PredictDisplacement(yVel, timeAtLedge, -player.gravity);
+        float vertPos = UMath.PredictDisplacement(yVel, timeAtLedge, -player.Gravity);
 
         if (vertPos >= relative.y - 2.6f && vertPos <= relative.y - 0.8f) // Distance is great, do auto-grab
         {
@@ -153,7 +159,7 @@ public class Jumping : StateBase<PlayerController>
         {
             float time;
             Vector3 adjustedVel = UMath.VelocityToReachPoint(player.transform.position,
-                ledgeInfo.Point, zVel, player.gravity, out time);
+                ledgeInfo.Point, zVel, player.Gravity, out time);
             yVel = adjustedVel.y;
         }
 

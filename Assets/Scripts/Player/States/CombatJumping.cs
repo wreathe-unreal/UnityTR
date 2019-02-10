@@ -62,8 +62,6 @@ public class CombatJumping : StateBase<PlayerController>
                 player.StateMachine.GoToState<Combat>();
                 return;
             }
-
-            player.ApplyGravity(player.gravity);
         }
         else
         {

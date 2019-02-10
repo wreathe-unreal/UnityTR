@@ -8,8 +8,8 @@ public class MonkeySwing : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
-        player.camController.PivotOnHip();
-        player.camController.LAUTurning = true;
+        player.CamControl.PivotOnHip();
+        player.CamControl.LAUTurning = true;
         player.Anim.applyRootMotion = true;
         player.Anim.SetBool("isMonkey", true);
         player.MinimizeCollider();
@@ -18,8 +18,8 @@ public class MonkeySwing : StateBase<PlayerController>
 
     public override void OnExit(PlayerController player)
     {
-        player.camController.PivotOnPivot();
-        player.camController.LAUTurning = false;
+        player.CamControl.PivotOnPivot();
+        player.CamControl.LAUTurning = false;
         player.Anim.applyRootMotion = false;
         player.Anim.SetBool("isMonkey", false);
         player.MaximizeCollider();
@@ -36,16 +36,10 @@ public class MonkeySwing : StateBase<PlayerController>
             return;
         }
 
-        float moveSpeed = player.walkSpeed;
-
         Vector3 target = player.transform.position + player.RawTargetVector(1f, true) * 1.5f
-            + Vector3.up * player.charControl.height;
+            + Vector3.up * player.CharControl.height;
 
-        LedgeInfo info;
-        if (!ledgeDetector.FindAboveHead(target, Vector3.up, 2f, out info))
-            moveSpeed = 0f;
-
-        player.MoveGrounded(moveSpeed);
+        player.MoveGrounded();
         player.RotateToVelocityGround();
     }
 }

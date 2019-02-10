@@ -31,7 +31,7 @@ public class Sliding : StateBase<PlayerController>
             return;
         }
 
-        if (Input.GetKeyDown(player.playerInput.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
+        if (Input.GetKeyDown(player.Inputf.drawWeapon) || Input.GetAxisRaw("CombatTrigger") > 0.1f)
         {
             if (!player.UpperStateMachine.IsInState<UpperCombat>())
                 player.UpperStateMachine.GoToState<UpperCombat>();
@@ -40,9 +40,9 @@ public class Sliding : StateBase<PlayerController>
         Vector3 slopeRight = Vector3.Cross(Vector3.up, player.Ground.Normal);
         Vector3 slopeDirection = Vector3.Cross(slopeRight, player.Ground.Normal).normalized;
 
-        player.Velocity = slopeDirection * player.slideSpeed;
+        /*player.Velocity = slopeDirection * player.slideSpeed;
         player.Velocity.Scale(new Vector3(1f, 0f, 1f));  // Ensures correct gravity can be applied
-        player.Velocity += Vector3.down * player.gravity;
+        player.Velocity += Vector3.down * player.gravity;*/
 
         player.RotateToVelocityGround();
 
@@ -51,7 +51,7 @@ public class Sliding : StateBase<PlayerController>
 
     private void HandleJump(PlayerController player)
     {
-        if (Input.GetKeyDown(player.playerInput.jump))
+        if (Input.GetKeyDown(player.Inputf.jump))
         {
             player.StateMachine.GoToState<Jumping>("Slide");
         }

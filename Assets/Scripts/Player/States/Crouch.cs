@@ -15,13 +15,13 @@ public class Crouch : StateBase<PlayerController>
     {
         isTransitioning = false;
 
-        originalHeight = player.charControl.height;
-        originalCenter = player.charControl.center;
+        originalHeight = player.CharControl.height;
+        originalCenter = player.CharControl.center;
 
-        player.charControl.height = 0.6f;
-        player.charControl.center = Vector3.up * 0.3f;
-        player.camController.PivotOnHip();
-        player.camController.LAUTurning = true;
+        player.CharControl.height = 0.6f;
+        player.CharControl.center = Vector3.up * 0.3f;
+        player.CamControl.PivotOnHip();
+        player.CamControl.LAUTurning = true;
         player.Anim.applyRootMotion = true;
         player.Anim.SetBool("isCrouch", true);
         player.Velocity = Vector3.zero;
@@ -30,10 +30,10 @@ public class Crouch : StateBase<PlayerController>
     public override void OnExit(PlayerController player)
     {
         player.EnableCharControl();
-        player.charControl.height = originalHeight;
-        player.charControl.center = originalCenter;
-        player.camController.PivotOnPivot();
-        player.camController.LAUTurning = false;
+        player.CharControl.height = originalHeight;
+        player.CharControl.center = originalCenter;
+        player.CamControl.PivotOnPivot();
+        player.CamControl.LAUTurning = false;
         player.Anim.applyRootMotion = false;
         player.Anim.SetBool("isCrouch", false);
     }
@@ -47,8 +47,8 @@ public class Crouch : StateBase<PlayerController>
             if (animState.IsName("Grab"))
             {
                 player.transform.position = ledgeInfo.Point
-                    - ledgeInfo.Direction * player.hangForwardOffset
-                    - Vector3.up * player.hangUpOffset;
+                    - ledgeInfo.Direction * player.HangForwardOffset
+                    - Vector3.up * player.HangUpOffset;
                 player.Anim.ResetTrigger("ToLedgeForward");
                 player.LocalVelocity = Vector3.zero;
                 player.StateMachine.GoToState<Climbing>();
@@ -56,8 +56,8 @@ public class Crouch : StateBase<PlayerController>
             else if (animState.IsName("LastChanceGrab"))
             {
                 player.Anim.MatchTarget(ledgeInfo.Point
-                    - ledgeInfo.Direction * player.hangForwardOffset
-                    - Vector3.up * player.hangUpOffset,
+                    - ledgeInfo.Direction * player.HangForwardOffset
+                    - Vector3.up * player.HangUpOffset,
                 Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up),
                 AvatarTarget.Root,
                 new MatchTargetWeightMask(Vector3.one, 1f),
@@ -66,7 +66,7 @@ public class Crouch : StateBase<PlayerController>
             return;
         }
 
-        if (!Input.GetKey(player.playerInput.crouch))
+        if (!Input.GetKey(player.Inputf.crouch))
         {
             if (!Physics.Raycast(player.transform.position, Vector3.up, 1.8f, ~(1 << 8), QueryTriggerInteraction.Ignore))
             {
@@ -92,9 +92,7 @@ public class Crouch : StateBase<PlayerController>
             return;
         }
 
-        float moveSpeed = player.walkSpeed;
-
-        player.MoveGrounded(moveSpeed);
+        player.MoveGrounded();
         player.RotateToVelocityGround();
     }
 }

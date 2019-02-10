@@ -26,7 +26,7 @@ public class Door : Interactable
         player.Anim.SetTrigger(pull ? "PullDoorLeft" : "PushDoorLeft");
         PlayDoorOpen();
 
-        while (player.isMovingAuto)
+        while (player.IsMovingAuto)
         {
             yield return null;
         }
