@@ -62,30 +62,37 @@ public class CombatJumping : StateBase<PlayerController>
                 player.StateMachine.GoToState<Combat>();
                 return;
             }
+            else if (player.VerticalSpeed <= -player.DamageVelocity)
+            {
+                player.ForceWaistRotation = false;
+                player.StateMachine.GoToState<InAir>();
+                player.UpperStateMachine.GoToState<Empty>(); // Stops player glitching with guns out
+                return;
+            }
         }
         else
         {
             if (transInfo.IsName("CombatCompress -> JumpR"))
             {
                 player.ForceWaistRotation = false;
-                player.Velocity = player.transform.right * 4f + Vector3.up * player.JumpYVel;
+                player.ImpulseVelocity(player.transform.right * player.RunJumpVel + Vector3.up * player.JumpYVel);
                 hasJumped = true;
             }
             else if (transInfo.IsName("CombatCompress -> JumpL"))
             {
                 player.ForceWaistRotation = false;
-                player.Velocity = player.transform.right * -4f + Vector3.up * player.JumpYVel;
+                player.ImpulseVelocity(player.transform.right * -player.RunJumpVel + Vector3.up * player.JumpYVel);
                 hasJumped = true;
             }
             else if (transInfo.IsName("CombatCompress -> JumpB"))
             {
                 player.ForceWaistRotation = false;
-                player.Velocity = player.transform.forward * -4f + Vector3.up * player.JumpYVel;
+                player.ImpulseVelocity(player.transform.forward * -player.RunJumpVel + Vector3.up * player.JumpYVel);
                 hasJumped = true;
             }
             else if (transInfo.IsName("CombatCompress -> JumpF"))
             {
-                player.Velocity = player.transform.forward * 4f + Vector3.up * player.JumpYVel;
+                player.ImpulseVelocity(player.transform.forward * player.RunJumpVel + Vector3.up * player.JumpYVel);
                 hasJumped = true;
             }
             

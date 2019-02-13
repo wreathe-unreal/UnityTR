@@ -8,6 +8,7 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerSFX))]
 public class PlayerController : MonoBehaviour
 {
+
     #region Private Serializable Fields
 
     [SerializeField] private bool autoLedgeTarget = true;
@@ -16,7 +17,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float runSpeed = 3.49f;
     [SerializeField] private float walkSpeed = 1.345f;
     [SerializeField] private float stairSpeed = 2f;
-    [SerializeField] private float swimSpeed = 2f;
+    [SerializeField] private float swimSpeed = 3.5f;
     [SerializeField] private float treadSpeed = 1.2f;
     [SerializeField] private float slideSpeed = 5f;
     [SerializeField] private float speedChangeRate = 8f;
@@ -48,6 +49,7 @@ public class PlayerController : MonoBehaviour
     #region Private Fields
 
     private bool isGrounded = true;
+    private bool groundedLastFrame = true;  // True if player was grounded on previous frame
     private bool useGravity = true;  // Gravity has no effect if false
     private bool groundedOnSteps = false;  // Allows player to walk off steps without ungrounding
     private bool forceWaistRotation = false;
@@ -76,6 +78,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 velocity;
     private Vector3 localVelocity;
     private Vector3 movementOffset; // Final movement amount (to keep gravity effect separate)
+    private Vector3 velocityLastFrame; // Velocity from previous frame
     private GroundInfo groundInfo;
 
     #endregion
@@ -87,8 +90,10 @@ public class PlayerController : MonoBehaviour
         // Calc jump speeds - v^2 = u^2 + 2as
         jumpYVel = Mathf.Sqrt(2f * jumpHeight * gravity);
 
-        damageVelocity = Mathf.Sqrt(2 * gravity * damageHeight);
-        deathVelocity = Mathf.Sqrt(2 * gravity * deathHeight);
+        damageVelocity = Mathf.Sqrt(2f * gravity * damageHeight);
+        deathVelocity = Mathf.Sqrt(2f * gravity * deathHeight);
+
+        Debug.Log("Damage at: " + damageVelocity + " Death at: " + deathVelocity);
     }
 
     private void Start()
@@ -149,9 +154,8 @@ public class PlayerController : MonoBehaviour
 
         CheckForGround();
 
-        smallestY = 0f;
-
-        ApplyGravity();
+        if (useGravity)
+            ApplyGravity();
 
         stateMachine.Update();
         upperStateMachine.Update();
@@ -162,10 +166,10 @@ public class PlayerController : MonoBehaviour
 
         SlideOffSlopeLimit();
 
-        Debug.Log(movementOffset + " Grounded: " + isGrounded + " Vert: " + verticalSpeed + " Hor: " + velocity + " Anim: " + anim.velocity);
+        groundInfo.Normal = Vector3.zero;
 
         if (charControl.enabled)
-            charControl.Move(movementOffset); 
+            charControl.Move(movementOffset * Time.deltaTime);
     }
 
     private void LateUpdate()
@@ -180,6 +184,9 @@ public class PlayerController : MonoBehaviour
                 waistBone.eulerAngles.x - 90f, waistBone.eulerAngles.y,
                 waistBone.eulerAngles.z);
         }
+
+        velocityLastFrame = movementOffset;
+        groundedLastFrame = isGrounded;
     }
 
     private void CheckForGround()
@@ -190,8 +197,8 @@ public class PlayerController : MonoBehaviour
             isGrounded = charControl.isGrounded;
 
         // This downwards ray is more accurate than the capsule information
-        // its not always available and player gets stuck if its not so we still use collider hit
-
+        // its not always available and player gets stuck if its not so we still use collider hits
+        
         RaycastHit hit;
 
         float castDist = charControl.stepOffset + charControl.skinWidth + charControl.radius;
@@ -199,59 +206,44 @@ public class PlayerController : MonoBehaviour
         Vector3 centerStart = transform.position + Vector3.up * charControl.radius;
 
         Debug.DrawRay(centerStart, Vector3.down * castDist, Color.blue);
-        if (Physics.Raycast(centerStart, Vector3.down, out hit, castDist, ~(1 << 8), QueryTriggerInteraction.Ignore))
+        if (groundedOnSteps && Physics.Raycast(centerStart, Vector3.down, out hit, castDist, ~(1 << 8), QueryTriggerInteraction.Ignore))
         {
-            groundInfo.Distance = transform.position.y - hit.point.y;
-            groundInfo.Angle = UMath.GroundAngle(hit.normal);
-            groundInfo.Tag = hit.collider.tag;
-            groundInfo.Normal = hit.normal;
+            float distance = transform.position.y - hit.point.y;
 
-            if (groundInfo.Angle > charControl.slopeLimit && groundInfo.Tag != "Slope")
+            // allows player to run of steps properly
+            if (distance <= charControl.stepOffset || hit.collider.tag.Equals("Slope"))
             {
-                isGrounded = false;
-            }
-            else
-            {
-                float maxHeight = groundedOnSteps ? charControl.stepOffset : charControl.skinWidth;
+                isGrounded = true;
 
-                // allows player to run of steps properly
-                if (groundInfo.Distance <= maxHeight)
-                    isGrounded = true;
+                groundInfo.Distance = distance;
+                groundInfo.Angle = UMath.GroundAngle(hit.normal);
+                groundInfo.Tag = hit.collider.tag;
+                groundInfo.Normal = hit.normal;
             }
         }
 
         anim.SetBool("isGrounded", isGrounded);
         anim.SetFloat("groundDistance", groundInfo.Distance);
         anim.SetFloat("groundAngle", groundInfo.Angle);
-
-        smallestY = 0f;
     }
-
-    float smallestY = 0f;
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
         if (hit.normal.y < 0f)
             return;  // Normal is pointing down so mustn't be ground
 
-        if (hit.normal.y > smallestY)
+        if (hit.normal.y > groundInfo.Normal.y)
         {
             groundInfo.Distance = transform.position.y - hit.point.y;
             groundInfo.Angle = UMath.GroundAngle(hit.normal);
             groundInfo.Tag = hit.collider.tag;
             groundInfo.Normal = hit.normal;
-
-            smallestY = hit.normal.y;
         }
     }
 
     private void ApplyGravity()
     {
-        if (!useGravity)
-        {
-            return;
-        }
-        else if (isGrounded)
+        if (isGrounded)
         {
             // Keeps player grounded properly
             verticalSpeed = -gravity;
@@ -265,18 +257,24 @@ public class PlayerController : MonoBehaviour
     // Method that stops player landing on non-slideable slopes
     private void SlideOffSlopeLimit()
     {
-        if (groundInfo.Angle > charControl.slopeLimit && velocity.y < 0f && groundInfo.Tag != "Slope")
-        { 
+        if (groundInfo.Angle > charControl.slopeLimit && groundInfo.Tag != "Slope")
+        {
             movementOffset = Vector3.ProjectOnPlane(movementOffset, groundInfo.Normal);
+
+            // Stops player getting stuck on an edge
+            if (movementOffset == Vector3.zero)
+            {
+                Vector3 slopeRight = Vector3.Cross(Vector3.up, groundInfo.Normal);
+                Vector3 slopeDirection = Vector3.Cross(slopeRight, groundInfo.Normal).normalized;
+
+                movementOffset = slopeDirection;
+            }
         }
     }
 
     private void BuildMovementOffset()
     {
         movementOffset = (useRootMotion ? Vector3.zero : velocity) + (Vector3.up * verticalSpeed);
-
-        // Keeps movement frame independent
-        movementOffset *= Time.deltaTime;
     }
 
     private void OnAnimatorIK()
@@ -401,9 +399,14 @@ public class PlayerController : MonoBehaviour
         verticalSpeed = 0f;
     }
 
-    public void MoveGrounded()
+    public void ResetVerticalSpeed()
     {
-        Vector3 targetVector = RawTargetVector(runSpeed);
+        verticalSpeed = 0f;
+    }
+
+    public void MoveGrounded(float speed)
+    {
+        Vector3 targetVector = RawTargetVector(speed);
 
         targetAngle = Vector3.SignedAngle(Vector3.forward, targetVector.normalized, Vector3.up);
         targetSpeed = UMath.GetHorizontalMag(targetVector);
@@ -423,10 +426,7 @@ public class PlayerController : MonoBehaviour
             localVelocity = Quaternion.FromToRotation(camForward, transform.forward) * (Vector3.forward * 0.1f);
         }
 
-        if (Mathf.Abs(targetVector.magnitude - localVelocity.magnitude) < 0.1f && Vector3.Angle(localVelocity, targetVector) < 1f)
-            localVelocity = targetVector;
-        else
-            localVelocity = Vector3.Slerp(localVelocity, targetVector, Time.deltaTime * speedChangeRate);
+        localVelocity = Vector3.Slerp(localVelocity, targetVector, Time.deltaTime * speedChangeRate);
 
         velocity = Quaternion.Euler(0f, cam.eulerAngles.y, 0f) * localVelocity;
 
@@ -435,12 +435,12 @@ public class PlayerController : MonoBehaviour
     }
 
     // Move on all axis not just horizontally
-    public void MoveFree(float speed, float smoothing = 16f, float maxTurnAngle = 20f)
+    public void MoveFree(float speed, float maxTurnAngle = 40f)
     {
-        Vector3 targetVector = Quaternion.Euler(0f, cam.eulerAngles.y, 0f) * RawTargetVector();
+        Vector3 targetVector = cam.transform.TransformDirection(RawTargetVector());
 
         if (velocity.magnitude < 0.1f && targetVector.magnitude > 0f)
-            velocity = transform.forward * 0.1f;  // Player will rotate smoothly from idle
+            Velocity = transform.forward * 0.1f;  // Player will rotate smoothly from idle
 
         if (Vector3.Angle(velocity.normalized, targetVector) > maxTurnAngle)
         {
@@ -450,10 +450,17 @@ public class PlayerController : MonoBehaviour
 
         targetVector *= speed;
 
-        velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * smoothing);
+        Velocity = Vector3.Slerp(velocity, targetVector, Time.deltaTime * speedChangeRate);
 
         anim.SetFloat("Speed", velocity.magnitude);
         anim.SetFloat("TargetSpeed", targetVector.magnitude);
+    }
+
+    public void MoveInDirection(float speed, Vector3 direction)
+    {
+        Vector3 finalVelocity = speed * direction;
+
+        Velocity = finalVelocity;
     }
 
     public void RotateToCamera()
@@ -468,6 +475,8 @@ public class PlayerController : MonoBehaviour
 
     public void RotateToVelocityGround(float smoothing = 0f)
     {
+        direction = 1;
+
         if (UMath.GetHorizontalMag(velocity) < 0.1f)
             return;
 
@@ -514,7 +523,7 @@ public class PlayerController : MonoBehaviour
         else
         {
             if (Mathf.Abs(Quaternion.Angle(target, transform.rotation)) > 10f)
-                transform.rotation = Quaternion.Lerp(transform.rotation, target, smoothing * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, target, smoothing * Time.deltaTime);
             else
                 adjustRotCombat = false;
         }
@@ -522,6 +531,8 @@ public class PlayerController : MonoBehaviour
 
     public void RotateToVelocity(float smoothing = 0f)
     {
+        direction = 1;
+
         if (velocity.magnitude < 0.1f)
             return;
 
@@ -641,6 +652,11 @@ public class PlayerController : MonoBehaviour
         get { return isGrounded; }
     }
 
+    public bool WasGrounded
+    {
+        get { return groundedLastFrame; }
+    }
+
     public bool IsMovingAuto
     {
         get { return isMovingAuto; }
@@ -693,6 +709,31 @@ public class PlayerController : MonoBehaviour
     public float Gravity
     {
         get { return gravity; }
+    }
+
+    public float RunSpeed
+    {
+        get { return runSpeed; }
+    }
+
+    public float WalkSpeed
+    {
+        get { return walkSpeed; }
+    }
+
+    public float SlideSpeed
+    {
+        get { return slideSpeed; }
+    }
+
+    public float SwimSpeed
+    {
+        get { return swimSpeed; }
+    }
+
+    public float TreadSpeed
+    {
+        get { return treadSpeed; }
     }
 
     public float JumpHeight
@@ -755,6 +796,11 @@ public class PlayerController : MonoBehaviour
         get { return grabForwardOffset; }
     }
 
+    public float VerticalSpeed
+    {
+        get { return verticalSpeed; }
+    }
+
     public Vector3 Velocity
     {
         get { return velocity; }
@@ -773,6 +819,11 @@ public class PlayerController : MonoBehaviour
             localVelocity = value;
             velocity = VelocityToGlobal(value);
         }
+    }
+
+    public Vector3 VelocityLastFrame
+    {
+        get { return velocityLastFrame; }
     }
 
     #endregion

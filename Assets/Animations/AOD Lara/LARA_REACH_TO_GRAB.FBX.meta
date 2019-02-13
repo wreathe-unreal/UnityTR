@@ -171,7 +171,7 @@ ModelImporter:
     - serializedVersion: 16
       name: LARA_REACH_TO_GRAB
       takeName: LARA_REACH_TO_GRAB
-      firstFrame: 1
+      firstFrame: 3
       lastFrame: 30
       wrapMode: 0
       orientationOffsetY: 0
@@ -202,6 +202,7 @@ ModelImporter:
     globalScale: 1
     meshCompression: 0
     addColliders: 0
+    useSRGBMaterialColor: 1
     importVisibility: 1
     importBlendShapes: 1
     importCameras: 1
@@ -226,6 +227,9 @@ ModelImporter:
     normalImportMode: 0
     tangentImportMode: 3
     normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
   importAnimation: 1
   copyAvatar: 1
   humanDescription:

@@ -5,26 +5,36 @@ using UnityEngine.UI;
 
 public class PlayerStats : MonoBehaviour
 {
-    public int maxHealth = 100;
+    #region Events
 
-    public Canvas canvas;
-    public RectTransform healthBar;
+    public delegate void PlayerDeath();
+    public event PlayerDeath OnDeath;
 
+    #endregion
+
+    #region Private Serializable Fields
+
+    [SerializeField] private int maxHealth = 100;
+
+    [SerializeField] private Canvas canvas;
+    [SerializeField] private RectTransform healthBar;
+
+    #endregion
+
+    #region Private Fields
+
+    private bool deathEventCalled = false;
     private int health;
 
     private PlayerController player;
+
+    #endregion
 
     private void Start()
     {
         health = maxHealth;
         player = GetComponent<PlayerController>();
         canvas.enabled = false;
-    }
-
-    private void Update()
-    {
-        if (health <= 0 && !player.StateMachine.IsInState<Dead>())
-            player.StateMachine.GoToState<Dead>();
     }
 
     public void ShowCanvas()
@@ -44,7 +54,19 @@ public class PlayerStats : MonoBehaviour
         {
             health = (int)Mathf.Clamp(value, 0f, maxHealth);
 
+            if (health <= 0 && !deathEventCalled)
+            {
+                player.StateMachine.GoToState<Dead>();
+                OnDeath.Invoke();
+                deathEventCalled = true;
+            }
+
             healthBar.localScale = new Vector3((float)health / maxHealth, 1f, 1f);
         }
+    }
+
+    public bool IsAlive()
+    {
+        return health > 0;
     }
 }

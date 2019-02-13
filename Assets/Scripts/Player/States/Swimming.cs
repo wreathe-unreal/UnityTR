@@ -15,12 +15,13 @@ public class Swimming : StateBase<PlayerController>
     {
         player.CamControl.LAUTurning = true;
         player.Anim.SetBool("isSwimming", true);
-        player.Anim.applyRootMotion = false;
+        player.UseRootMotion = false;
+        player.UseGravity = false;
         isEntering = true;
         isClimbingUp = false;
         player.CamControl.PivotOnTarget();
-        player.Velocity = new Vector3(0f, Mathf.Max(player.Velocity.y, -10f));
-        decelRate = player.Velocity.y / 0.5f;
+        player.Velocity = new Vector3(0f, Mathf.Max(player.VerticalSpeed, -10f), 0f);
+        decelRate = 10f;
         player.Anim.SetFloat("Speed", 0f);
     }
 
@@ -28,7 +29,8 @@ public class Swimming : StateBase<PlayerController>
     {
         player.CamControl.LAUTurning = false;
         player.Anim.SetBool("isSwimming", false);
-        player.Anim.applyRootMotion = true;
+        player.UseRootMotion = true;
+        player.UseGravity = true;
         isEntering = false;
         isTreading = false;
         player.Anim.SetBool("isTreading", false);
@@ -41,8 +43,8 @@ public class Swimming : StateBase<PlayerController>
 
         if (isEntering)
         {
-            if (player.Velocity.y < 0f)
-                player.Velocity = Vector3.up * (player.Velocity.y - (decelRate * Time.deltaTime));
+            if (player.VerticalSpeed < 0f)
+                player.ImpulseVelocity(Vector3.up * -decelRate * Time.deltaTime, false);
             else
                 isEntering = false;
 
@@ -54,7 +56,7 @@ public class Swimming : StateBase<PlayerController>
 
             if (!player.IsMovingAuto)
             {
-                player.Anim.applyRootMotion = true;
+                player.UseRootMotion = true;
                 player.DisableCharControl();
             }   
 
@@ -67,24 +69,38 @@ public class Swimming : StateBase<PlayerController>
             return;
         }
 
-        // Horizontal Swimming
-        player.MoveGrounded();
-
         if (!isTreading)
         {
+            player.MoveFree(player.SwimSpeed);
+
             player.RotateToVelocity();
 
             CheckForSurface(player);
         }
         else
         {
+            CorrectTreadPosition(player);
+
+            player.MoveGrounded(player.TreadSpeed);
+
             player.RotateToVelocityGround();
 
             CheckForClimbOut(player);
 
             if (Input.GetKey(player.Inputf.crouch))
-            {
                 GoToSwim(player);
+        }
+    }
+
+    private void CorrectTreadPosition(PlayerController player)
+    {
+        RaycastHit hit;
+        Vector3 castFrom = player.transform.position + (Vector3.up * player.CharControl.height);
+        if (Physics.Raycast(castFrom, Vector3.down, out hit, player.CharControl.height, ~(1 << 8), QueryTriggerInteraction.Collide))
+        {
+            if (hit.collider.CompareTag("Water"))
+            {
+                player.transform.position = hit.point + (1.52f * Vector3.down);
             }
         }
     }
@@ -99,7 +115,7 @@ public class Swimming : StateBase<PlayerController>
             player.Anim.SetTrigger("ClimbOut");
             isClimbingUp = true;
 
-            player.Anim.applyRootMotion = false;
+            player.UseRootMotion = false;
 
             player.CamControl.PivotOnPivot();
 
@@ -113,7 +129,8 @@ public class Swimming : StateBase<PlayerController>
     private void CheckForSurface(PlayerController player)
     {
         RaycastHit hit;
-        if (Physics.Raycast(player.transform.position + (Vector3.up * 0.5f), Vector3.down, out hit, 0.5f, ~(1 << 8), QueryTriggerInteraction.Collide))
+        Vector3 castFrom = player.transform.position + (Vector3.up * 0.5f);
+        if (Physics.Raycast(castFrom, Vector3.down, out hit, 0.5f, ~(1 << 8), QueryTriggerInteraction.Collide))
         {
             if (hit.collider.CompareTag("Water"))
             {

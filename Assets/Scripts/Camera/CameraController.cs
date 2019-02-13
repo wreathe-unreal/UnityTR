@@ -4,30 +4,24 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    public bool mouseControl = true;
-    public float rotationSpeed = 120.0f;
-    public float pitchMax = 80.0f;
-    public float pitchMin = -45.0f;
-    public float rotationSmoothing = 30f;
-    public float translationSmoothing = 30f;
-    public float turnRate = 1.6f;
-    public float verticalTurnInfluence = 0.6f;
-    public bool LAUTurning = true;
-    public bool isSplit = false;
-    public string MouseX = "Mouse X";
-    public string MouseY = "Mouse Y";
-
-    [Header("Split Variables")]
-    public Vector2 position;
-    public Vector2 size;
-
-    public Transform target;
+    [SerializeField] private Transform target;  // What camera is following
+    [SerializeField] private bool mouseControl = true;  // If mouse causes rotation
+    [SerializeField] private float rotationSpeed = 120.0f;  // Speed said rotation happens at
+    [SerializeField] private float pitchMax = 80.0f;  // Max angle cam can be at
+    [SerializeField] private float pitchMin = -45.0f;  // Smallest angle cam can be at
+    [SerializeField] private float rotationSmoothing = 18f; 
+    [SerializeField] private float translationSmoothing = 10f;
+    [SerializeField] private float turnRate = 120f; // Rate at which horizontal axis causes LAU turning
+    [SerializeField] private float verticalTurnInfluence = 60f; // Vertical axis influence on said turning
+    [SerializeField] private string mouseX = "Mouse X";
+    [SerializeField] private string mouseY = "Mouse Y";
 
     private float yaw = 0.0f;
     private float pitch = 0.0f;
     private float lastMouseMove = 0f;
     private float currentTurnRate = 0f;
 
+    private PlayerInput input;
     private Transform pivot;
     private Transform lookAt;
     private Vector3 pivotOrigin;
@@ -38,12 +32,10 @@ public class CameraController : MonoBehaviour
 
     private void Start()
     {
+        input = target.GetComponent<PlayerInput>();
         forceDirection = Vector3.zero;
         camState = CameraState.Grounded;
         cam = GetComponentInChildren<Camera>();
-
-        if (isSplit)
-            cam.rect = new Rect(position, size);
 
         pivot = cam.transform.parent;
         pivotOrigin = pivot.localPosition;
@@ -66,8 +58,8 @@ public class CameraController : MonoBehaviour
     {
         if (mouseControl)
         {
-            float x = Input.GetAxis(MouseX);
-            float y = Input.GetAxis(MouseY);
+            float x = Input.GetAxis(mouseX);
+            float y = Input.GetAxis(mouseY);
 
             if (x != 0f || y != 0f)
                 lastMouseMove = Time.time;
@@ -117,18 +109,15 @@ public class CameraController : MonoBehaviour
 
     private void DoExtraRotation()
     {
-        string horizontal = target.GetComponent<PlayerInput>().horizontalAxis;
-        string vertical = target.GetComponent<PlayerInput>().verticalAxis;
-
-        float axisValue = Input.GetAxis(horizontal);
-        float vertAxis = Input.GetAxis(vertical);
+        float axisValue = Input.GetAxis(input.horizontalAxis);
+        float vertAxis = Input.GetAxis(input.verticalAxis);
 
         if (Time.time - lastMouseMove < 0.75f)
             currentTurnRate = 0f;
         else
             currentTurnRate = turnRate - (vertAxis * verticalTurnInfluence);
 
-        yaw += currentTurnRate * axisValue;
+        yaw += currentTurnRate * axisValue * Time.deltaTime;
     }
 
     public IEnumerator UnsmoothRotationSet()
@@ -161,6 +150,16 @@ public class CameraController : MonoBehaviour
         targetPivotPosition = pivotOrigin;
     }
 
+    #region Public Properties
+
+    public bool LAUTurning { get; set; }
+
+    public Transform Target
+    {
+        get { return target; }
+        set { target = value; }
+    }
+
     public CameraState State
     {
         get { return camState; }
@@ -178,6 +177,8 @@ public class CameraController : MonoBehaviour
         get { return lookAt; }
         set { lookAt = value; }
     }
+
+    #endregion
 }
 
 // enum incase of future extensions

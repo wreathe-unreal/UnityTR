@@ -8,6 +8,7 @@ public class MonkeySwing : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
+        player.StopMoving();
         player.CamControl.PivotOnHip();
         player.CamControl.LAUTurning = true;
         player.Anim.applyRootMotion = true;
@@ -31,7 +32,7 @@ public class MonkeySwing : StateBase<PlayerController>
         if (Input.GetButtonDown("Crouch"))
         {
             player.Anim.SetTrigger("LetGo");
-            player.Velocity = Vector3.zero;
+            player.StopMoving();
             player.StateMachine.GoToState<InAir>();
             return;
         }
@@ -39,7 +40,7 @@ public class MonkeySwing : StateBase<PlayerController>
         Vector3 target = player.transform.position + player.RawTargetVector(1f, true) * 1.5f
             + Vector3.up * player.CharControl.height;
 
-        player.MoveGrounded();
+        player.MoveGrounded(player.WalkSpeed);
         player.RotateToVelocityGround();
     }
 }

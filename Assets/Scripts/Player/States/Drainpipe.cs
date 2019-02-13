@@ -30,17 +30,17 @@ public class Drainpipe : StateBase<PlayerController>
 
         if (goingToClimb)
         {
-            player.Anim.applyRootMotion = true;
-            if (player.Anim.GetCurrentAnimatorStateInfo(0).IsName("HangLoop"))
+            player.UseRootMotion = true;
+            if (animState.IsName("HangLoop"))
                 player.StateMachine.GoToState<Climbing>();
+
             return;
         }
 
         if (Input.GetKeyDown(player.Inputf.crouch))
         {
-            //player.transform.position = player.transform.position - player.transform.forward * 0.2f;
             player.Anim.SetTrigger("LetGo");
-            player.Velocity = Vector3.zero;
+            player.ImpulseVelocity(Vector3.zero);
             player.StateMachine.GoToState<InAir>();
             return;
         }

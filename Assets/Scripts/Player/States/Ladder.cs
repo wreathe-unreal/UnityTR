@@ -57,8 +57,13 @@ public class Ladder : StateBase<PlayerController>
 
         if (Input.GetKeyDown(player.Inputf.crouch))
         {
-            player.Velocity = Vector3.zero;
+            player.StopMoving();
+
+            // Stops player getting caught in wall
+            player.transform.position = player.transform.position - player.transform.forward * player.CharControl.radius;
+
             player.Anim.SetTrigger("LetGo");
+
             player.StateMachine.GoToState<InAir>();
             return;
         }

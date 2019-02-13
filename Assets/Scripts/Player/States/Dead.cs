@@ -33,7 +33,7 @@ public class Dead : StateBase<PlayerController>
     {
         if (Time.time - timeCounter >= 5f)
         {
-            SceneManager.LoadScene("DevArea");
+            SceneManager.LoadScene(0);
         }
     }
 }

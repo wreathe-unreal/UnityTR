@@ -33,7 +33,7 @@ class Grabbing : StateBase<PlayerController>
 
         player.Anim.SetFloat("YSpeed", player.Velocity.y);
 
-        if (player.Velocity.y < -10f)
+        if (player.Velocity.y < -player.DamageVelocity)
         {
             player.StateMachine.GoToState<InAir>();
             return;
@@ -54,7 +54,7 @@ class Grabbing : StateBase<PlayerController>
 
         LedgeInfo ledgeInfo;
         // Checks if there is a ledge to grab
-        if (ledgeDetector.FindLedgeAtPoint(startPos, player.transform.forward, 0.25f, deltaH, out ledgeInfo))
+        if (ledgeDetector.FindHangableLedge(startPos, player.transform.forward, 0.25f, deltaH, out ledgeInfo, player))
         {
             grabPoint = ledgeInfo.Point - player.transform.forward * player.HangForwardOffset;
             grabPoint.y = ledgeInfo.Point.y - player.HangUpOffset;
@@ -74,14 +74,16 @@ class Grabbing : StateBase<PlayerController>
         {
             if (hit.collider.CompareTag("MonkeySwing"))
             {
+                player.Anim.SetTrigger("Grab");
                 player.StateMachine.GoToState<MonkeySwing>();
                 return;
             }
         }
         else if (player.Grounded)
         {
-            player.Anim.SetTrigger("Land");
+            player.Anim.SetTrigger("HardLand");
             player.StateMachine.GoToState<Locomotion>();
+            return;
         }
 
         lastPos = player.transform.position;

@@ -22,9 +22,10 @@ public class Crouch : StateBase<PlayerController>
         player.CharControl.center = Vector3.up * 0.3f;
         player.CamControl.PivotOnHip();
         player.CamControl.LAUTurning = true;
-        player.Anim.applyRootMotion = true;
+        player.UseRootMotion = true;
+        player.GroundedOnSteps = true;
         player.Anim.SetBool("isCrouch", true);
-        player.Velocity = Vector3.zero;
+        player.ImpulseVelocity(Vector3.zero);
     }
 
     public override void OnExit(PlayerController player)
@@ -34,7 +35,7 @@ public class Crouch : StateBase<PlayerController>
         player.CharControl.center = originalCenter;
         player.CamControl.PivotOnPivot();
         player.CamControl.LAUTurning = false;
-        player.Anim.applyRootMotion = false;
+        player.UseRootMotion = false;
         player.Anim.SetBool("isCrouch", false);
     }
 
@@ -77,7 +78,7 @@ public class Crouch : StateBase<PlayerController>
         else if (!player.Grounded)
         {
             // Check if there is a ledge to grab as a last chance
-            if (ledgeDetector.FindLedgeAtPoint(player.transform.position, -player.transform.forward, 0.5f, 1f, out ledgeInfo) && ledgeInfo.HangRoom)
+            if (ledgeDetector.FindHangableLedge(player.transform.position, -player.transform.forward, 0.5f, 1f, out ledgeInfo, player))
             {
                 player.DisableCharControl();
                 player.Anim.SetTrigger("LastChance");
@@ -85,14 +86,13 @@ public class Crouch : StateBase<PlayerController>
             }
             else
             {
-                player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
-                player.LocalVelocity = Vector3.zero;
+                player.ResetVerticalSpeed();
                 player.StateMachine.GoToState<InAir>();
             }
             return;
         }
 
-        player.MoveGrounded();
+        player.MoveGrounded(player.WalkSpeed);
         player.RotateToVelocityGround();
     }
 }

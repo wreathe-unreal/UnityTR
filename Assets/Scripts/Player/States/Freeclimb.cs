@@ -47,7 +47,7 @@ class Freeclimb : StateBase<PlayerController>
             if (animState.IsName("FreeclimbCornerInR") || animState.IsName("FreeclimbCornerInL")
                 || animState.IsName("FreeclimbCornerOutR") || animState.IsName("FreeclimbCornerOutL"))
             {
-                player.Anim.applyRootMotion = true;
+                player.UseRootMotion = true;
                 return;
             }
             else if (animState.IsName("FreeclimbIdle"))
@@ -76,8 +76,8 @@ class Freeclimb : StateBase<PlayerController>
             return;
         }
 
-        Vector3 flatCheckStart = player.transform.position + 1.75f * Vector3.up - player.transform.forward * 0.2f;
-        if (forward > 0.1f && !Physics.Raycast(flatCheckStart, player.transform.forward, 1f))
+        Vector3 ledgeCheckStart = player.transform.position + 1.6f * Vector3.up - player.transform.forward * 0.2f;
+        if (forward > 0.1f && !Physics.Raycast(ledgeCheckStart, player.transform.forward, 1f))
         {
             isClimbingUp = true;
             player.Anim.SetBool("isClimbingUp", true);
@@ -85,23 +85,18 @@ class Freeclimb : StateBase<PlayerController>
 
         HandleCorners(player);
 
+        StopClimbingIntoWalls(player);
+
         player.Anim.SetFloat("Forward", forward);
         player.Anim.SetFloat("Right", right);
         player.Anim.SetBool("isOutCorner", isOutCornering);
         player.Anim.SetBool("isInCorner", isInCornering);
 
-        if (player.Ground.Distance <= 1f)
-            forward = Mathf.Clamp01(forward);
-
-        if (Physics.Raycast(player.transform.position, -player.transform.right, 1f))
-            right = Mathf.Clamp01(right);
-
-        if (Physics.Raycast(player.transform.position, player.transform.right, 1f))
-            right = Mathf.Clamp(right, -1f, 0f);
-
+        // Correct player position (stops deviations away from wall)
         RaycastHit hit;
-        Vector3 start = player.transform.position + Vector3.up * 1.4f;
-        if (Physics.Raycast(start, player.transform.forward, out hit, 1f)
+        Vector3 start = player.transform.position + Vector3.up * player.CharControl.height / 2f;
+
+        if (Physics.Raycast(start, player.transform.forward, out hit, 1f, ~(1 << 8))
             && !(animState.IsName("FreeclimbStart") || animState.IsName("Grab") || animState.IsName("Reach")))
         {
             Vector3 newPos = new Vector3(hit.point.x - player.transform.forward.x * forwardOffset,
@@ -111,6 +106,25 @@ class Freeclimb : StateBase<PlayerController>
             player.transform.position = newPos;
             player.transform.rotation = Quaternion.LookRotation(-hit.normal, Vector3.up);
         }
+    }
+
+    private void StopClimbingIntoWalls(PlayerController player)
+    {
+        // Stops player climbing into roof
+        if (Physics.Raycast(player.transform.position + player.CharControl.height * Vector3.up, Vector3.up, 1f))
+            forward = Mathf.Clamp(forward, -1f, 0f);
+
+        // Stops player climbing into ground
+        if (Physics.Raycast(player.transform.position, Vector3.down, 1f))
+            forward = Mathf.Clamp01(forward);
+
+        // Stops player climbing through wall to left
+        if (Physics.Raycast(player.transform.position, -player.transform.right, 1f))
+            right = Mathf.Clamp01(right);
+
+        // Stops player climbing through wall to right
+        if (Physics.Raycast(player.transform.position, player.transform.right, 1f))
+            right = Mathf.Clamp(right, -1f, 0f);
     }
 
     public enum CornerType

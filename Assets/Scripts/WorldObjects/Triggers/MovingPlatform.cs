@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/***
+ * FEATURE NOT READY - EXCLUDED FROM BETA
+ * ***/
+
 public class MovingPlatform : MonoBehaviour
 {
     private Vector3 lastPos;

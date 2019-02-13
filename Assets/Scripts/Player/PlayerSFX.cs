@@ -7,9 +7,10 @@ public class PlayerSFX : MonoBehaviour
 {
     private AudioSource playerSource;
 
-    [Header("Properties")]
+    [Header("Volumes")]
     public float footMinVol = 0.22f;
     public float footMaxVol = 0.3f;
+
     [Header("Sound Files")]
     public AudioClip[] feetSounds;
     public AudioClip[] jumpSounds;
@@ -54,7 +55,7 @@ public class PlayerSFX : MonoBehaviour
 
     public void PlayHitGroundSound()
     {
-        PlayRandomSound(hitGroundSounds, .5f);
+        PlayRandomSound(hitGroundSounds, 0.5f);
     }
 
     public void PlayVaultSound()

@@ -6,7 +6,9 @@ public class Sliding : StateBase<PlayerController>
 {
     public override void OnEnter(PlayerController player)
     {
-        player.Anim.applyRootMotion = false;
+        player.UseRootMotion = false;
+        player.GroundedOnSteps = true;
+
         player.Anim.SetBool("isSliding", true);
     }
 
@@ -17,17 +19,19 @@ public class Sliding : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (player.Ground.Tag != "Slope")
+        Vector3 slopeRight = Vector3.Cross(Vector3.up, player.Ground.Normal);
+        Vector3 slopeDirection = Vector3.Cross(slopeRight, player.Ground.Normal).normalized;
+
+        if (!player.Grounded)
         {
-            if (player.Grounded)
-            {
-                player.StateMachine.GoToState<Locomotion>();
-            }
-            else
-            {
-                player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
-                player.StateMachine.GoToState<InAir>();
-            }
+            // More natural drop off
+            player.ImpulseVelocity(slopeDirection * player.SlideSpeed);
+            player.StateMachine.GoToState<InAir>();
+            return;
+        }
+        else if (player.Ground.Tag != "Slope")
+        {
+            player.StateMachine.GoToState<Locomotion>();
             return;
         }
 
@@ -37,13 +41,9 @@ public class Sliding : StateBase<PlayerController>
                 player.UpperStateMachine.GoToState<UpperCombat>();
         }
 
-        Vector3 slopeRight = Vector3.Cross(Vector3.up, player.Ground.Normal);
-        Vector3 slopeDirection = Vector3.Cross(slopeRight, player.Ground.Normal).normalized;
+        slopeDirection.y = 0;  // Don't add to gravity
 
-        /*player.Velocity = slopeDirection * player.slideSpeed;
-        player.Velocity.Scale(new Vector3(1f, 0f, 1f));  // Ensures correct gravity can be applied
-        player.Velocity += Vector3.down * player.gravity;*/
-
+        player.MoveInDirection(player.SlideSpeed, slopeDirection);
         player.RotateToVelocityGround();
 
         HandleJump(player);

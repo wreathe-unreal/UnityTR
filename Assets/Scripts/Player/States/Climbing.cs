@@ -14,12 +14,16 @@ public class Climbing : StateBase<PlayerController>
     private bool isFeetRoom = false;
     private float right = 0f;
 
+    private Vector3 cornerTargetPosition = Vector3.zero;
+    private Quaternion cornerTargetRotation = Quaternion.identity;
+
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
 
     public override void OnEnter(PlayerController player)
     {
         player.CamControl.State = CameraState.Climb;
         player.StopMoving();
+        player.UseGravity = false;
         player.MinimizeCollider();
         player.DisableCharControl();
         player.Anim.SetBool("isClimbing", true);
@@ -32,6 +36,7 @@ public class Climbing : StateBase<PlayerController>
         player.MaximizeCollider();
         player.EnableCharControl();
         player.UseRootMotion = false;
+        player.UseGravity = true;
         player.Anim.SetBool("isClimbing", false);
         isOutCornering = false;
         isInCornering = false;
@@ -51,11 +56,17 @@ public class Climbing : StateBase<PlayerController>
                 || animState.IsName("CornerRight") || animState.IsName("InCornerRight"))
             {
                 player.UseRootMotion = true;
+
+                MatchTargetWeightMask mask = new MatchTargetWeightMask(Vector3.one, 1f);
+                player.Anim.MatchTarget(cornerTargetPosition, cornerTargetRotation, AvatarTarget.Root, mask, 0f, 1f);
+
                 return;
             }
             else if (animState.IsName("HangLoop"))
             {
                 isOutCornering = isInCornering = false;
+
+                player.UseRootMotion = true;
             }
             else
             {
@@ -68,7 +79,7 @@ public class Climbing : StateBase<PlayerController>
             {
                 player.StateMachine.GoToState<Locomotion>();
             }
-            
+
             return;
         }
 
@@ -90,19 +101,8 @@ public class Climbing : StateBase<PlayerController>
             }
         }
 
-        float horDir = Mathf.Sign(right);
-
-        if (IsBlocked(player, horDir * player.transform.right, 0.34f))
-        {
-            player.UseRootMotion = false;
-
-            if (!FindInnerCorner(player, horDir))
-                right = 0f;
-        }
-        else
-        {
-            player.UseRootMotion = true;
-        }
+        if (right != 0f)
+            LookForCorners(player);
 
         AdjustPosition(player);
 
@@ -111,72 +111,98 @@ public class Climbing : StateBase<PlayerController>
         player.Anim.SetBool("isOutCorner", isOutCornering);
         player.Anim.SetBool("isInCorner", isInCornering);
 
-        if (Input.GetKey(player.Inputf.jump) && animState.IsName("HangLoop")
-            && ledgeDetector.CanClimbUp(player.transform.position, player.transform.forward))
-            ClimbUp(player);
+        if (Input.GetKey(player.Inputf.jump) && animState.IsName("HangLoop"))
+        {
+            if (ledgeDetector.CanClimbUp(player.transform.position, player.transform.forward))
+                ClimbUp(player);
+        }
     }
 
-    private void HandleCorners(PlayerController player)
+    private void LookForCorners(PlayerController player)
     {
-        bool found = false;
+        float horDir = Mathf.Sign(right);
 
-        if (right < -0.1f)
+        BlockType blockType = IsBlocked(player, horDir * player.transform.right, 0.34f);
+
+        if (blockType == BlockType.Inner)
         {
-            //found = FindCorner(player, -1f, ref ledgeLeft, ref ledgeInnerLeft);
-        }
-        else if (right > 0.1f)
-        {
-            //found = FindCorner(player, 1f, ref ledgeRight, ref ledgeInnerRight);
-        }
-
-        if (!found)
-            right = 0f;
-    }
-
-    private bool FindInnerCorner(PlayerController player, float sign)
-    {
-        float upOffset = player.HangUpOffset - ledgeDetector.MinDepth;
-
-        // Check for inner corner
-        Vector3 start = player.transform.position
-            + Vector3.up * upOffset
-            - player.transform.forward * 0.15f;
-
-        if (ledgeDetector.FindLedgeAtPoint(start, sign * player.transform.right, 0.4f, 0.2f))
-        {
-            isInCornering = true;
-
-            if (sign == 1f)
-                ledgeInnerRight = true;
+            LedgeInfo corner;
+            if (!FindInnerCorner(player, horDir * player.transform.right, out corner))
+            {
+                player.UseRootMotion = false;
+                right = 0f;
+            }
             else
-                ledgeInnerLeft = true;
-
-            return true;
+            {
+                cornerTargetPosition = corner.Point - Vector3.up * player.HangUpOffset - corner.Direction * player.HangForwardOffset;
+                cornerTargetRotation = Quaternion.LookRotation(corner.Direction);
+                isInCornering = true;
+            }
         }
-
-        return false;
-    }
-
-    private bool FindOutterCorner(PlayerController player, float sign, ref bool result)
-    {
-        float upOffset = player.HangUpOffset - ledgeDetector.MinDepth;
-
-        Vector3 start = player.transform.position
-            + Vector3.up * upOffset
-            + sign * player.transform.right * 0.4f
-            + player.transform.forward * 0.4f;
-
-        if (ledgeDetector.FindLedgeAtPoint(start, -sign * player.transform.right, 0.34f, 0.2f))
+        else if (blockType == BlockType.Outter)
         {
-            isOutCornering = true;
-            result = true;
+            LedgeInfo corner;
+            if (!FindOutterCorner(player, horDir * player.transform.right, out corner))
+            {
+                player.UseRootMotion = false;
+                right = 0f;
+            }
+            else
+            {
+                cornerTargetPosition = corner.Point - Vector3.up * player.HangUpOffset - corner.Direction * player.HangForwardOffset;
+                cornerTargetRotation = Quaternion.LookRotation(corner.Direction);
+                isOutCornering = true;
+            }
+        }
+        else if (blockType == BlockType.NoClimb)
+        {
+            player.UseRootMotion = false;
+            right = 0f;
+        }
+        else
+        {
+            player.UseRootMotion = true;
+        }
+    }
+
+    private bool FindInnerCorner(PlayerController player, Vector3 dir, out LedgeInfo ledgeInfo)
+    {
+        Vector3 castFrom = player.transform.position
+            + Vector3.up * (player.HangUpOffset - ledgeDetector.MinDepth)
+            - player.transform.forward * 0.2f;
+
+        if (ledgeDetector.FindLedgeAtPoint(castFrom, dir, 1f, 0.2f, out ledgeInfo))
+        {
             return true;
         }
 
         return false;
     }
 
-    private bool IsBlocked(PlayerController player, Vector3 dir, float distance, int accuracy = 8)
+    private bool FindOutterCorner(PlayerController player, Vector3 dir, out LedgeInfo ledgeInfo)
+    {
+        Vector3 castFrom = player.transform.position
+            + Vector3.up * (player.HangUpOffset - ledgeDetector.MinDepth)
+            + player.transform.forward * 0.4f
+            + dir * 0.6f;
+
+        if (ledgeDetector.FindLedgeAtPoint(castFrom, -dir, 1f, 0.2f, out ledgeInfo))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private enum BlockType
+    {
+        Inner,
+        Outter,
+        None,
+        NoClimb
+    }
+
+    private BlockType IsBlocked(PlayerController player, Vector3 dir, float distance, int accuracy = 8)
     {
         // Check for inner blockage (like a wall)
         float deltaHeight = player.HangUpOffset / accuracy;
@@ -186,22 +212,33 @@ public class Climbing : StateBase<PlayerController>
             Vector3 start = player.transform.position + (i * deltaHeight * Vector3.up);
 
             if (Physics.Raycast(start, dir, distance, ~(1 << 8)))
-                return true;
+                return BlockType.Inner;
         }
 
         // Only not blocked if ledge to climb on (means no ledge left can be detected)
         float upOffset = player.HangUpOffset - ledgeDetector.MinDepth;
-        Vector3 start2 = player.transform.position + (Vector3.up * upOffset) + (dir * 0.4f);
+        Vector3 start2 = player.transform.position + (Vector3.up * upOffset) + (dir * distance);
 
-        if (ledgeDetector.FindLedgeAtPoint(start2, player.transform.forward, 0.2f, 0.2f))
-            return false; 
+        if (ledgeDetector.FindLedgeAtPoint(start2, player.transform.forward, 0.4f, 0.2f))
+            return BlockType.None;
 
-        return true;  // No ledge detected at all
+        // See if non-climbable wall is blocking
+        for (int i = 0; i <= accuracy; i++)
+        {
+            Vector3 start = player.transform.position + (i * deltaHeight * Vector3.up) + (dir * distance);
+
+            if (Physics.Raycast(start, player.transform.forward, distance, ~(1 << 8)))
+                return BlockType.NoClimb;
+        }
+
+        return BlockType.Outter;  // No ledge detected at all
     }
 
     private void ClimbUp(PlayerController player)
     {
         player.CamControl.State = CameraState.Grounded;
+
+        player.UseRootMotion = true;
 
         player.Anim.SetFloat("Speed", 0f);
         player.Anim.SetFloat("TargetSpeed", 0f);
@@ -216,8 +253,15 @@ public class Climbing : StateBase<PlayerController>
 
     private void LetGo(PlayerController player)
     {
-        player.transform.parent = null;  // detaches from moving platforms
+        player.MaximizeCollider();
+
+        // Detaches from moving platforms
+        player.transform.parent = null;  
+        // Stops player getting caught in wall
+        player.transform.position = player.transform.position - player.transform.forward * player.CharControl.radius;
+
         player.Anim.SetTrigger("LetGo");
+
         player.StateMachine.GoToState<InAir>();
     }
 
@@ -228,7 +272,7 @@ public class Climbing : StateBase<PlayerController>
         Vector3 start = player.transform.position + Vector3.up * (player.HangUpOffset - ledgeDetector.MinDepth);
 
         LedgeInfo ledgeInfo;
-        if (ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.2f, 0.2f, out ledgeInfo))
+        if (ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.5f, 0.2f, out ledgeInfo))
         {
             Quaternion targetRot = Quaternion.Euler(0f, Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up).eulerAngles.y, 0f);
 

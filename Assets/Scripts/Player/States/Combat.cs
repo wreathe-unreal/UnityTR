@@ -13,18 +13,19 @@ public class Combat : StateBase<PlayerController>
         targetRotation = Quaternion.identity;
         adjustRotate = false;
         player.EnableCharControl();
-        player.Anim.applyRootMotion = false;
+        player.UseRootMotion = false;
     }
 
     public override void OnExit(PlayerController player)
     {
-        player.Anim.applyRootMotion = false;
+        player.UseRootMotion = false;
     }
 
     public override void Update(PlayerController player)
     {
         if (!Input.GetKey(player.Inputf.drawWeapon) && Input.GetAxisRaw("CombatTrigger") < 0.1f)
         {
+            player.ForceWaistRotation = false;
             player.StateMachine.GoToState<Locomotion>();
             return;
         }
@@ -62,7 +63,9 @@ public class Combat : StateBase<PlayerController>
                 return;
             }
 
-            player.MoveGrounded();
+            float speed = Input.GetKey(player.Inputf.walk) ? player.WalkSpeed : player.RunSpeed;
+            player.MoveGrounded(speed);
+
             if (player.TargetSpeed > 1f)
                 player.RotateToVelocityStrafe();
             else

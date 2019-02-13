@@ -169,7 +169,7 @@ ModelImporter:
     - serializedVersion: 16
       name: LARA_RUN
       takeName: LARA_RUN
-      firstFrame: 0.1
+      firstFrame: 1
       lastFrame: 31
       wrapMode: 0
       orientationOffsetY: 0.07
@@ -183,9 +183,9 @@ ModelImporter:
       loopBlendPositionY: 1
       loopBlendPositionXZ: 0
       keepOriginalOrientation: 1
-      keepOriginalPositionY: 0
+      keepOriginalPositionY: 1
       keepOriginalPositionXZ: 0
-      heightFromFeet: 1
+      heightFromFeet: 0
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves:
@@ -203,7 +203,7 @@ ModelImporter:
             inWeight: 0
             outWeight: 0
           - serializedVersion: 3
-            time: 0.3256212
+            time: 0.19391635
             value: 0
             inSlope: 0
             outSlope: 0
@@ -212,7 +212,7 @@ ModelImporter:
             inWeight: 0
             outWeight: 0
           - serializedVersion: 3
-            time: 0.6666667
+            time: 0.89543724
             value: 0
             inSlope: 0
             outSlope: 0
@@ -246,7 +246,7 @@ ModelImporter:
             inWeight: 0
             outWeight: 0
           - serializedVersion: 3
-            time: 0.32444444
+            time: 0.42585552
             value: 0
             inSlope: 0
             outSlope: 0
@@ -255,7 +255,7 @@ ModelImporter:
             inWeight: 0
             outWeight: 0
           - serializedVersion: 3
-            time: 0.49999997
+            time: 0.50190115
             value: 1
             inSlope: 0
             outSlope: 0
@@ -264,7 +264,7 @@ ModelImporter:
             inWeight: 0
             outWeight: 0
           - serializedVersion: 3
-            time: 0.6688889
+            time: 0.6387833
             value: 0
             inSlope: 0
             outSlope: 0
@@ -295,6 +295,7 @@ ModelImporter:
     globalScale: 1
     meshCompression: 0
     addColliders: 0
+    useSRGBMaterialColor: 1
     importVisibility: 1
     importBlendShapes: 1
     importCameras: 1
@@ -319,6 +320,9 @@ ModelImporter:
     normalImportMode: 0
     tangentImportMode: 3
     normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
   importAnimation: 1
   copyAvatar: 1
   humanDescription:

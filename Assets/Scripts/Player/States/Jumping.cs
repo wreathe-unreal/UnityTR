@@ -66,7 +66,7 @@ public class Jumping : StateBase<PlayerController>
         // Allows player to smoothly turn round during stand jump
         if ((animState.IsName("Still_Compress_Forward") || animState.IsName("Compress")) && !noRotate && !hasJumped)
         {
-            player.MoveGrounded();
+            player.MoveGrounded(1f);
             player.RotateToVelocityGround();
         }
 
@@ -99,8 +99,10 @@ public class Jumping : StateBase<PlayerController>
             // Checks for ledges
             if (player.AutoLedgeTarget && !isDive)
             {
-                ledgesDetected = ledgeDetector.FindLedgeJump(player.transform.position + Vector3.down * 2.5f,
-                    player.transform.forward, 6.2f, 2.5f + player.JumpHeight + player.GrabUpOffset, out ledgeInfo);
+                Vector3 autoGrabCastStart = player.transform.position + Vector3.down * 2.5f;
+                float autoGrabMaxHeight = 2.5f + player.JumpHeight + player.GrabUpOffset;
+
+                ledgesDetected = ledgeDetector.FindLedgeJump(autoGrabCastStart, player.transform.forward, 6.2f, autoGrabMaxHeight, out ledgeInfo, player);
 
                 if (ledgesDetected && TryReachLedge(player, zVel, ref yVel))
                 {
@@ -142,6 +144,13 @@ public class Jumping : StateBase<PlayerController>
 
     private bool TryReachLedge(PlayerController player, float zVel, ref float yVel, bool canClear = true)
     {
+        // Doing standing jump, allow player to grab if close
+        if (zVel < 0.5f)
+        {
+            player.StateMachine.GoToState<AutoGrabbing>(ledgeInfo);
+            return true;
+        }
+        
         // Need to check where player will be relative to ledge
         float timeAtPeak = yVel / player.Gravity;  // v = u + at
         Vector3 relative = ledgeInfo.Point - player.transform.position;

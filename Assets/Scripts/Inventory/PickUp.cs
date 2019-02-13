@@ -4,16 +4,19 @@ using UnityEngine;
 
 public class PickUp : Interactable
 {
-    public string itemName = "New Item";
-    public bool destroyOnUse = false;
+    [SerializeField] private string itemName = "New Item";
+    [SerializeField] private bool destroyOnUse = false;
+
+    [SerializeField] private GameObject inventoryModel;
 
     private bool pickedUp = false;
-
-    public GameObject inventoryModel;
 
     public virtual void Use(PlayerController player)
     {
         Debug.Log("Using " + itemName + " on " + player.name);
+
+        if (destroyOnUse)
+            player.GetComponent<PlayerInventory>().RemoveItem(this);
     }
 
     public override void Interact(PlayerController player)
@@ -42,5 +45,15 @@ public class PickUp : Interactable
         }
 
         gameObject.SetActive(false);
+    }
+
+    public string ItemName
+    {
+        get { return itemName; }
+    }
+
+    public GameObject InventoryModel
+    {
+        get { return inventoryModel; }
     }
 }

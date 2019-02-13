@@ -83,7 +83,7 @@ public class Locomotion : StateBase<PlayerController>
         if (!player.Grounded && !isRootMotion)
         {
             // Check if there is a ledge to grab as a last chance
-            if (ledgeDetector.FindLedgeAtPoint(player.transform.position, -player.transform.forward, 0.5f, 1f, out ledgeInfo) && ledgeInfo.HangRoom)
+            if (ledgeDetector.FindHangableLedge(player.transform.position, -player.transform.forward, 0.5f, 1f, out ledgeInfo, player))
             {
                 player.DisableCharControl();
                 player.Anim.SetTrigger("LastChance");
@@ -91,15 +91,14 @@ public class Locomotion : StateBase<PlayerController>
             }
             else
             {
-                player.Velocity = Vector3.Scale(player.Velocity, new Vector3(1f, 0f, 1f));
-                player.LocalVelocity = Vector3.zero;
+                player.ResetVerticalSpeed();
                 player.StateMachine.GoToState<InAir>();
             }
             return;
         }
         else if (player.Ground.Tag == "Slope" && !isRootMotion)
         {
-            player.LocalVelocity = Vector3.zero;
+            player.StopMoving();
             player.StateMachine.GoToState<Sliding>();
             return;
         }
@@ -129,7 +128,9 @@ public class Locomotion : StateBase<PlayerController>
             player.Anim.SetFloat("Stairs", 0f, 0.1f, Time.deltaTime);
         }
 
-        player.MoveGrounded();
+        float speed = Input.GetKey(player.Inputf.walk) ? player.WalkSpeed : player.RunSpeed;
+
+        player.MoveGrounded(speed);
 
         if (player.TargetSpeed > 1f && !isRootMotion)
             player.RotateToVelocityGround();
@@ -142,7 +143,7 @@ public class Locomotion : StateBase<PlayerController>
             Vector3 start = player.transform.position
                 + player.transform.forward * .75f
                 + Vector3.down * 0.1f;
-            if (ledgeDetector.FindLedgeAtPoint(start, -player.transform.forward, .75f, 0.2f, out ledgeInfo))
+            if (ledgeDetector.FindHangableLedge(start, -player.transform.forward, .75f, 0.2f, out ledgeInfo, player))
             {
                 isTransitioning = true;
                 player.Anim.SetTrigger("ToLedgeForward");

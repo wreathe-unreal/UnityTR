@@ -37,11 +37,11 @@ public class RingMenu : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Return))
         {
             UseCurrentItem();
-
             return;
         }
 
-        if (rotater.rotation.eulerAngles.y == targetRotation.eulerAngles.y)
+        // If not currently rotating, allow to rotate
+        if (Mathf.Approximately(rotater.rotation.eulerAngles.y, targetRotation.eulerAngles.y))
         {
             float axisValue = Input.GetAxisRaw(input.horizontalAxis);
 
@@ -72,10 +72,8 @@ public class RingMenu : MonoBehaviour
     {
         inventory.Items[currentItem].Use(GetComponent<PlayerController>());
 
-        if (inventory.Items[currentItem].destroyOnUse)
-            inventory.RemoveItem(inventory.Items[currentItem]);
-
         isPaused = false;
+
         DisableMenu();
     }
 
@@ -89,7 +87,7 @@ public class RingMenu : MonoBehaviour
             currentItem = inventory.Items.Count - 1;
 
         targetRotation = Quaternion.Euler(0f, currentItem * angleChange * Mathf.Rad2Deg, 0f);
-        nameText.text = inventory.Items[currentItem].itemName;
+        nameText.text = inventory.Items[currentItem].ItemName;
     }
 
     private void EnableMenu()
@@ -105,6 +103,7 @@ public class RingMenu : MonoBehaviour
 
     private void RefreshMenu()
     {
+        // Removes old items
         foreach (Transform child in rotater)
         {
             Destroy(child.gameObject);
@@ -113,6 +112,7 @@ public class RingMenu : MonoBehaviour
         if (inventory.Items.Count == 0)
         {
             nameText.text = "Empty Inventory";
+            return;
         }
         
         angleChange = (2f * Mathf.PI) / inventory.Items.Count;
@@ -122,7 +122,7 @@ public class RingMenu : MonoBehaviour
             /*if (inventory.Items[i] == null)
                 continue;*/
 
-            GameObject item = Instantiate(inventory.Items[i].inventoryModel, rotater);
+            GameObject item = Instantiate(inventory.Items[i].InventoryModel, rotater);
 
             float angle = angleChange * i;
             float x = 2f * Mathf.Sin(angle);  // Convert polar co-ords to cartesian
@@ -130,14 +130,16 @@ public class RingMenu : MonoBehaviour
 
             item.transform.localPosition = new Vector3(x, 0f, z);
             item.transform.rotation = Quaternion.LookRotation(item.transform.position - rotater.transform.position);
+
             foreach (Transform child in item.transform)
             {
                 child.gameObject.layer = rotater.gameObject.layer;
             }
+
             item.layer = rotater.gameObject.layer;
         }
 
         currentItem = 0;
-        nameText.text = inventory.Items[currentItem].itemName;
+        nameText.text = inventory.Items[currentItem].ItemName;
     }
 }
