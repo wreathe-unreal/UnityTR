@@ -1,0 +1,5 @@
+Lara Croft and Tomb Raider are trademarks of Square Enix Ltd.  All rights reserved.
+
+By using URaider you agree not to use any script, animation, model or other material in any commercial project or with any other commercial intent.  Any works derived from this framework must be free of charge.
+
+You also agree to indemnify the author of this framework and its scripts from any legal action.
