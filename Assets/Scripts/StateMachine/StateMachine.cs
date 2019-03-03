@@ -9,6 +9,7 @@ public class StateMachine<T>
 
     private readonly T owner;
     private StateBase<T> currentState;
+    private StateBase<T> lastState;
     private Dictionary<string, StateBase<T>> allStates;
 
     public StateMachine(T owner)
@@ -32,9 +33,16 @@ public class StateMachine<T>
         return currentState is TState;
     }
 
+    public bool LastStateWas<TState>()
+    {
+        return lastState is TState;
+    }
+
     public void GoToState<TState>()
     {
         string stateType = typeof(TState).ToString();
+
+        lastState = currentState;
 
         if (currentState != null)
             currentState.OnExit(owner);
@@ -51,6 +59,8 @@ public class StateMachine<T>
     public void GoToState<TState>(object context)
     {
         string stateType = typeof(TState).ToString();
+
+        lastState = currentState;
 
         if (currentState != null)
             currentState.OnExit(owner);

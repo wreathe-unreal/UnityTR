@@ -69,7 +69,7 @@ public class Ladder : StateBase<PlayerController>
         }
 
         if (player.transform.position.y > currentLadder.transform.position.y
-            + (currentLadder.MainCollider.size.y - player.CharControl.height))
+            + (currentLadder.MainCollider.size.y - 2.5f))
         {
             if (currentLadder.offAtTop && forward > 0.1f)
             {

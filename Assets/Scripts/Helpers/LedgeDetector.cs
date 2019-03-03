@@ -35,15 +35,6 @@ public class LedgeDetector
         return false;
     }
 
-    public bool CanClimbUp(Vector3 start, Vector3 dir)
-    {
-        if (!Physics.Raycast(start + Vector3.up * 2.4f, dir, 0.4f)
-            && !Physics.Raycast(start + Vector3.up * 3.9f, dir, 0.4f))
-            return true;
-
-        return false;
-    }
-
     public bool FindHangableLedge(Vector3 start, Vector3 dir, float maxDistance, float deltaHeight, out LedgeInfo ledgeInfo, PlayerController player)
     {
         if (FindLedgeAtPoint(start, dir, maxDistance, deltaHeight, out ledgeInfo))
@@ -51,7 +42,7 @@ public class LedgeDetector
             Vector3 heightCheckStart = ledgeInfo.Point - dir * player.HangForwardOffset;
 
             // If we hit something that isn't a trigger thats not water then something is blocking
-
+            //
             RaycastHit hit;
             if (Physics.Raycast(heightCheckStart, Vector3.down, out hit, player.HangUpOffset, ~(1 << 8), QueryTriggerInteraction.Collide))
             {
@@ -60,9 +51,9 @@ public class LedgeDetector
             }
 
             // Now check that there is room for Lara's hands on either side (stops her hanging inside a wall)
-
+            //
             Vector3 handCheckStart = ledgeInfo.Point - ledgeInfo.Direction * 0.1f + Vector3.down * (minHeight / 2f);
-            Vector3 ledgeRight = Vector3.Cross(ledgeInfo.Direction, Vector3.up);
+            Vector3 ledgeRight = Vector3.Cross(ledgeInfo.UpNormal, -ledgeInfo.Direction);
 
             if (!FindLedgeAtPoint(handCheckStart - ledgeRight * player.CharControl.radius, ledgeInfo.Direction, 0.2f, minHeight))
                 return false;
@@ -81,8 +72,8 @@ public class LedgeDetector
         int notPlayerLayer = ~(1 << 8);
 
         // Horizontal check
+        //
         RaycastHit hHit;
-
         if (!Physics.Raycast(start, dir, out hHit, maxDistance, notPlayerLayer, QueryTriggerInteraction.Ignore))
             goto NoLedge;
 
@@ -95,6 +86,7 @@ public class LedgeDetector
         }
 
         // Vertical check
+        //
         RaycastHit vHit; 
         start = hHit.point + (dir * minDepth);
         start.y += deltaHeight;
@@ -102,16 +94,22 @@ public class LedgeDetector
         if (!Physics.Raycast(start, Vector3.down, out vHit, deltaHeight, notPlayerLayer, QueryTriggerInteraction.Ignore))
             goto NoLedge;
 
-        // Check angle is shallow enough sideways (think shimmying up when going sideways)
-        float angleRight = Vector3.SignedAngle(Vector3.up, vHit.normal, -hHit.normal);
+        Vector3 rightNormal = vHit.normal - Vector3.Scale(vHit.normal, UMath.MakeXYZPositive(-hHit.normal));
 
-        if (Mathf.Abs(angleRight) > maxRightAngle)
+        // Check angle is shallow enough sideways (think shimmying up when going sideways)
+        //
+        float angleRight = Vector3.Angle(Vector3.up, rightNormal);
+
+        if (angleRight > maxRightAngle)
             goto NoLedge;
 
         // Check angle is shallow enough straight in front (think grabbing bottom of slope)
+        //
         Vector3 ledgeRight = Vector3.Cross(Vector3.up, hHit.normal).normalized;
 
-        float angleForward = Vector3.SignedAngle(Vector3.up, vHit.normal, ledgeRight);
+        Vector3 forwardNormal = vHit.normal - Vector3.Scale(vHit.normal, UMath.MakeXYZPositive(ledgeRight));
+
+        float angleForward = Vector3.Angle(Vector3.up, forwardNormal);
 
         if (angleForward > maxForwardAngle)
             goto NoLedge;
@@ -121,12 +119,22 @@ public class LedgeDetector
 
         Vector3 ledgePoint = new Vector3(hHit.point.x, vHit.point.y - offset, hHit.point.z);
 
-        // Check minimum depth
-        start = ledgePoint + Vector3.up * 0.1f + hHit.normal * 0.2f;
-        if (Physics.Raycast(start, -hHit.normal, minDepth + 0.2f, notPlayerLayer, QueryTriggerInteraction.Ignore))
+        // Check nothing blocking vertically
+        //
+        start = ledgePoint + hHit.normal * 0.1f - Vector3.up * 0.1f;
+        if (Physics.Raycast(start, Vector3.up, 0.2f, notPlayerLayer, QueryTriggerInteraction.Ignore))
             goto NoLedge;
 
-        ledgeInfo = new LedgeInfo(LedgeType.Normal, ledgePoint, -hHit.normal, hHit.collider);
+        start = ledgePoint + hHit.normal * 0.1f + Vector3.up * 0.1f;
+        if (Physics.Raycast(start, Vector3.down, 0.2f, notPlayerLayer, QueryTriggerInteraction.Ignore))
+            goto NoLedge;
+
+        // Check minimum depth
+        start = ledgePoint + Vector3.up * 0.1f + hHit.normal * 0.1f;
+        if (Physics.Raycast(start, -hHit.normal, minDepth + 0.1f, notPlayerLayer, QueryTriggerInteraction.Ignore))
+            goto NoLedge;
+
+        ledgeInfo = new LedgeInfo(LedgeType.Normal, ledgePoint, -hHit.normal, vHit.normal, hHit.collider, angleForward, angleRight);
         return true;
 
         NoLedge:
@@ -167,12 +175,12 @@ public class LedgeDetector
     {
         RaycastHit vHit;
         Vector3 vStart = start + (Vector3.up * 2f) + (dir * depth);
-        Debug.DrawRay(vStart, Vector3.down * (maxHeight - 0.01f), Color.red, 1f);
+        
         if (Physics.Raycast(vStart, Vector3.down, out vHit, (maxHeight - 0.01f), ~(1 << 8)))
         {
             RaycastHit hHit;
             Vector3 hStart = new Vector3(start.x, vHit.point.y - 0.01f, start.z);
-            Debug.DrawRay(hStart, dir * depth, Color.red, 1f);
+            
             if (Physics.Raycast(start, dir, out hHit, depth, ~(1 << 8)))
             {
                 Vector3 ledgeRight = Vector3.Cross(Vector3.up, hHit.normal);

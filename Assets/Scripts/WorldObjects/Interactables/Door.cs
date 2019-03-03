@@ -4,48 +4,48 @@ using UnityEngine;
 
 public class Door : Interactable
 {
-    public bool openLeft = true;
-    public bool pull = true;
-
     [SerializeField]
-    KeyItem key;
+    private bool pull = true;
 
     public override void Interact(PlayerController player)
     {
         base.Interact(player);
+
+        if (!player.StateMachine.IsInState<Locomotion>())
+            return;
 
         StartCoroutine(OpenDoor(player));
     }
 
     public IEnumerator OpenDoor(PlayerController player)
     {
-        player.MoveWait(transform.position - transform.right * (pull ? 1f : 0.75f) - transform.forward * 0.4f,
-            Quaternion.LookRotation(transform.forward),
-            7f, 16f);
+        Vector3 playerTargetPos = transform.position - transform.right * (pull ? 1f : 0.75f) - transform.forward * 0.4f;
 
+        player.MoveWait(playerTargetPos, Quaternion.LookRotation(transform.forward), player.WalkSpeed, 16f);
         player.Anim.SetTrigger(pull ? "PullDoorLeft" : "PushDoorLeft");
-        PlayDoorOpen();
+
+        Trigger();
 
         while (player.IsMovingAuto)
         {
             yield return null;
         }
 
-        player.Anim.applyRootMotion = true;
-
         AnimatorStateInfo stateInfo = player.Anim.GetCurrentAnimatorStateInfo(0);
-        do
+        while (!stateInfo.IsName("RunWalk") && !stateInfo.IsName("Idle"))
         {
-            stateInfo = player.Anim.GetCurrentAnimatorStateInfo(0);
             yield return null;
-        } while (!stateInfo.IsName("Locomotion"));
+            stateInfo = player.Anim.GetCurrentAnimatorStateInfo(0);
+        } 
 
-        player.Anim.applyRootMotion = false;
+        // Stops player opening door at new location
         GetComponent<BoxCollider>().enabled = false;
     }
 
-    public void PlayDoorOpen()
+    public override void Trigger()
     {
+        base.Trigger();
+
         GetComponent<Animator>().Play(pull ? "PullOnLeft" : "Push");
     }
 }

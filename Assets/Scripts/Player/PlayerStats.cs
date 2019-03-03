@@ -7,6 +7,9 @@ public class PlayerStats : MonoBehaviour
 {
     #region Events
 
+    // Used to stop death being called multiple times
+    private bool deathEventCalled = false;
+
     public delegate void PlayerDeath();
     public event PlayerDeath OnDeath;
 
@@ -15,16 +18,16 @@ public class PlayerStats : MonoBehaviour
     #region Private Serializable Fields
 
     [SerializeField] private int maxHealth = 100;
+    [SerializeField] private int maxBreath = 1000;
 
-    [SerializeField] private Canvas canvas;
-    [SerializeField] private RectTransform healthBar;
+    [SerializeField] private HUDManager HUDManager;
 
     #endregion
 
     #region Private Fields
 
-    private bool deathEventCalled = false;
     private int health;
+    private float breath;  // float because increments are affected by delta time and are small
 
     private PlayerController player;
 
@@ -33,18 +36,36 @@ public class PlayerStats : MonoBehaviour
     private void Start()
     {
         health = maxHealth;
+        breath = maxBreath;
+
         player = GetComponent<PlayerController>();
-        canvas.enabled = false;
     }
 
-    public void ShowCanvas()
+    public bool TryShowCanvas()
     {
-        canvas.enabled = true;
+        if (HUDManager)
+        {
+            HUDManager.ShowCanvas();
+            return true;
+        }
+
+        return false;
     }
 
-    public void HideCanvas()
+    public bool TryHideCanvas()
     {
-        canvas.enabled = false;
+        if (HUDManager)
+        {
+            HUDManager.HideCanvas();
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool IsAlive()
+    {
+        return health > 0;
     }
 
     public int Health
@@ -61,12 +82,21 @@ public class PlayerStats : MonoBehaviour
                 deathEventCalled = true;
             }
 
-            healthBar.localScale = new Vector3((float)health / maxHealth, 1f, 1f);
+            if (HUDManager)
+                HUDManager.UpdateHealth((float)health / maxHealth);
         }
     }
 
-    public bool IsAlive()
+    public float Breath
     {
-        return health > 0;
+        get { return breath; }
+        set
+        {
+            breath = Mathf.Clamp(value, 0f, maxBreath);
+
+            if (HUDManager)
+                HUDManager.UpdateBreath(breath / maxBreath);
+        }
     }
+
 }

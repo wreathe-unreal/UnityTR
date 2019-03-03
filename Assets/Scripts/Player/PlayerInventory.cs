@@ -12,7 +12,6 @@ public class PlayerInventory : MonoBehaviour
     {
         if (items.Count >= maxItems)
         {
-            Debug.Log("Inventory is full");
             return false;
         }
 

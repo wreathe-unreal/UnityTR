@@ -33,7 +33,7 @@ class Grabbing : StateBase<PlayerController>
 
         player.Anim.SetFloat("YSpeed", player.Velocity.y);
 
-        if (player.Velocity.y < -player.DamageVelocity)
+        if (player.VerticalSpeed < -player.DamageVelocity)
         {
             player.StateMachine.GoToState<InAir>();
             return;

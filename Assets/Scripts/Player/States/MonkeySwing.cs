@@ -29,7 +29,7 @@ public class MonkeySwing : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (Input.GetButtonDown("Crouch"))
+        if (Input.GetKeyDown(player.Inputf.crouch) || !CheckStillOnMonkey(player))
         {
             player.Anim.SetTrigger("LetGo");
             player.StopMoving();
@@ -37,10 +37,37 @@ public class MonkeySwing : StateBase<PlayerController>
             return;
         }
 
-        Vector3 target = player.transform.position + player.RawTargetVector(1f, true) * 1.5f
-            + Vector3.up * player.CharControl.height;
+        AdjustPosition(player);
 
         player.MoveGrounded(player.WalkSpeed);
         player.RotateToVelocityGround();
+    }
+
+    // Corrects player position
+    private void AdjustPosition(PlayerController player)
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(player.transform.position, Vector3.up, out hit, player.HangUpOffset + 0.2f, ~(1 << 8), QueryTriggerInteraction.Ignore))
+        {
+            if (hit.collider.CompareTag("MonkeySwing"))
+            {
+                player.transform.position = hit.point - Vector3.up * player.HangUpOffset;
+            }
+        }
+    }
+
+    // Checks if player is still hanging from a monkey swing (hasn't deviated off it)
+    private bool CheckStillOnMonkey(PlayerController player)
+    {
+        Vector3 target = player.transform.position;
+
+        RaycastHit hit;
+        if (Physics.Raycast(target, Vector3.up, out hit, player.HangUpOffset + 0.2f, ~(1 << 8), QueryTriggerInteraction.Ignore))
+        {
+            if (hit.collider.CompareTag("MonkeySwing"))
+                return true;
+        }
+
+        return false;
     }
 }

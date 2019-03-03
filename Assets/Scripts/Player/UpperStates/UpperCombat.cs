@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class UpperCombat : StateBase<PlayerController>
 {
-    //public static Transform target;
+    private HUDManager hud;
 
     public override void OnEnter(PlayerController player)
     {
@@ -14,26 +14,33 @@ public class UpperCombat : StateBase<PlayerController>
             return;
         }
 
-        player.Weapons.target = null;
-
-        player.Stats.ShowCanvas();
         player.Anim.SetBool("isCombat", true);
         player.Anim.SetBool("isTargetting", true);
         player.Anim.SetBool("isFiring", false);
+
+        player.Weapons.target = null;
         player.Weapons.HoldingCurrentWeapon(true);
-        player.ForceWaistRotation = true;
+
+        player.Stats.TryShowCanvas();
+        
         player.CamControl.LookAt = player.Weapons.target;
+
+        player.ForceWaistRotation = true;
     }
 
     public override void OnExit(PlayerController player)
     {
-        player.CamControl.LookAt = null;
-        player.ForceWaistRotation = false;
         player.Anim.SetBool("isCombat", false);
         player.Anim.SetBool("isTargetting", false);
         player.Anim.SetBool("isFiring", false);
+
         player.Weapons.HoldingCurrentWeapon(false);
-        player.Stats.HideCanvas();
+
+        player.Stats.TryHideCanvas();
+
+        player.CamControl.LookAt = null;
+
+        player.ForceWaistRotation = false;
     }
 
     public override void Update(PlayerController player)
@@ -45,8 +52,7 @@ public class UpperCombat : StateBase<PlayerController>
             return;
         }
 
-        if (player.Weapons.target == null)
-            CheckForTargets(player);
+        CheckForTargets(player);
 
         Vector3 aimDirection = player.Weapons.target != null ? 
             (player.Weapons.target.position - player.transform.position).normalized
@@ -63,18 +69,35 @@ public class UpperCombat : StateBase<PlayerController>
 
     private void CheckForTargets(PlayerController player)
     {
-        Collider[] hitColliders = Physics.OverlapSphere(player.transform.position, 10f);
-
-        foreach (Collider c in hitColliders)
+        if (player.Weapons.target != null)
         {
-            if (c.gameObject.CompareTag("Enemy"))
+            EnemyController enemy = player.Weapons.target.GetComponent<EnemyController>();
+
+            // Enemy is now dead, get rid of it
+            if (enemy && enemy.Health <= 0f)
+                player.Weapons.target = player.CamControl.LookAt = null;
+        }
+        else
+        {
+            Collider[] hitColliders = Physics.OverlapSphere(player.transform.position, 10f);
+
+            foreach (Collider c in hitColliders)
             {
-                player.CamControl.LookAt = player.Weapons.target = c.gameObject.transform;
-                break;
-            }
-            else
-            {
-                player.Weapons.target = null;
+                if (c.gameObject.CompareTag("Enemy"))
+                {
+                    EnemyController enemy = c.GetComponent<EnemyController>();
+
+                    // Enemy is now dead, ignore
+                    if (enemy && enemy.Health <= 0f)
+                        continue;
+
+                    player.CamControl.LookAt = player.Weapons.target = c.gameObject.transform;
+                    break;
+                }
+                else
+                {
+                    player.Weapons.target = null;
+                }
             }
         }
     }

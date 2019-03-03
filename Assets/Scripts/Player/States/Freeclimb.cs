@@ -19,10 +19,16 @@ class Freeclimb : StateBase<PlayerController>
     {
         isOutCornering = false;
         isInCornering = false;
-        player.Velocity = Vector3.zero;
+        isClimbingUp = false;
+
+        player.StopMoving();
+        
         player.MinimizeCollider();
         player.DisableCharControl();
-        player.Anim.applyRootMotion = true;
+
+        player.UseGravity = false;
+        player.UseRootMotion = true;
+
         player.Anim.SetBool("isFreeclimb", true);
     }
 
@@ -30,8 +36,10 @@ class Freeclimb : StateBase<PlayerController>
     {
         player.MaximizeCollider();
         player.EnableCharControl();
-        isClimbingUp = false;
-        player.Anim.applyRootMotion = false;
+        
+        player.UseGravity = true;
+        player.UseRootMotion = false;
+
         player.Anim.SetBool("isFreeclimb", false);
     }
 
@@ -71,27 +79,36 @@ class Freeclimb : StateBase<PlayerController>
 
         if (Input.GetKeyDown(player.Inputf.crouch))
         {
+            player.StopMoving();
             player.Anim.SetTrigger("LetGo");
             player.StateMachine.GoToState<InAir>();
             return;
         }
 
-        Vector3 ledgeCheckStart = player.transform.position + 1.6f * Vector3.up - player.transform.forward * 0.2f;
-        if (forward > 0.1f && !Physics.Raycast(ledgeCheckStart, player.transform.forward, 1f))
+        Vector3 ledgeCheckStart = player.transform.position + 1.6f * Vector3.up;
+        if (forward > 0.1f && !Physics.Raycast(ledgeCheckStart - player.transform.forward * 0.2f, player.transform.forward, 1f))
         {
-            isClimbingUp = true;
-            player.Anim.SetBool("isClimbingUp", true);
+            Vector3 tryClimbTo = ledgeCheckStart + player.transform.forward * player.CharControl.radius * 2f;
+            if (UMath.CanFitInSpace(tryClimbTo, player.CharControl.height, player.CharControl.radius))
+            {
+                isClimbingUp = true;
+                player.Anim.SetBool("isClimbingUp", true);
+                return;
+            }
         }
 
         HandleCorners(player);
-
+        AdjustPosition(player, animState);
         StopClimbingIntoWalls(player);
 
         player.Anim.SetFloat("Forward", forward);
         player.Anim.SetFloat("Right", right);
         player.Anim.SetBool("isOutCorner", isOutCornering);
         player.Anim.SetBool("isInCorner", isInCornering);
+    }
 
+    private void AdjustPosition(PlayerController player, AnimatorStateInfo animState)
+    {
         // Correct player position (stops deviations away from wall)
         RaycastHit hit;
         Vector3 start = player.transform.position + Vector3.up * player.CharControl.height / 2f;
@@ -117,14 +134,6 @@ class Freeclimb : StateBase<PlayerController>
         // Stops player climbing into ground
         if (Physics.Raycast(player.transform.position, Vector3.down, 1f))
             forward = Mathf.Clamp01(forward);
-
-        // Stops player climbing through wall to left
-        if (Physics.Raycast(player.transform.position, -player.transform.right, 1f))
-            right = Mathf.Clamp01(right);
-
-        // Stops player climbing through wall to right
-        if (Physics.Raycast(player.transform.position, player.transform.right, 1f))
-            right = Mathf.Clamp(right, -1f, 0f);
     }
 
     public enum CornerType
@@ -197,22 +206,22 @@ class Freeclimb : StateBase<PlayerController>
 
         if (moveType == CornerType.Out)
         {
-            player.Anim.applyRootMotion = false;
+            player.UseRootMotion = false;
             isOutCornering = true;
         }
         else if (moveType == CornerType.In)
         {
-            player.Anim.applyRootMotion = false;
+            player.UseRootMotion = false;
             isInCornering = true;
         }
         else if (moveType == CornerType.Stop)
         {
             right = 0f;
-            player.Anim.applyRootMotion = false;
+            player.UseRootMotion = false;
         }
         else
         {
-            player.Anim.applyRootMotion = true;
+            player.UseRootMotion = true;
         }
 
         player.Anim.SetBool("isOutCorner", isOutCornering);

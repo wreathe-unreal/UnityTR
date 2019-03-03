@@ -22,6 +22,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float slideSpeed = 5f;
     [SerializeField] private float speedChangeRate = 8f;
 
+    [Header("Damage Rates")]
+    [SerializeField] private float breathLossRate = 2f;
+    [SerializeField] private float breathRecoveryRate = 2f;
+    [SerializeField] private float underwaterDeathSpeed = 18f;
+
     [Header("Physics")]
     [SerializeField] private float gravity = 14f;
     [SerializeField] private float damageHeight = 7f;
@@ -93,7 +98,8 @@ public class PlayerController : MonoBehaviour
         damageVelocity = Mathf.Sqrt(2f * gravity * damageHeight);
         deathVelocity = Mathf.Sqrt(2f * gravity * deathHeight);
 
-        Debug.Log("Damage at: " + damageVelocity + " Death at: " + deathVelocity);
+        velocity = Vector3.zero;
+        localVelocity = Vector3.zero;
     }
 
     private void Start()
@@ -104,12 +110,11 @@ public class PlayerController : MonoBehaviour
         anim = GetComponent<Animator>();
         playerSFX = GetComponent<PlayerSFX>();
         playerStats = GetComponent<PlayerStats>();
-        playerStats.HideCanvas();
-        velocity = Vector3.zero;
-        localVelocity = Vector3.zero;
+        weaponManager = GetComponent<WeaponManager>();
+
         stateMachine = new StateMachine<PlayerController>(this);
         upperStateMachine = new StateMachine<PlayerController>(this);
-        weaponManager = GetComponent<WeaponManager>();
+
         SetUpStateMachine();
     }
 
@@ -202,10 +207,8 @@ public class PlayerController : MonoBehaviour
         RaycastHit hit;
 
         float castDist = charControl.stepOffset + charControl.skinWidth + charControl.radius;
+        Vector3 centerStart = transform.position + Vector3.up * (charControl.radius + charControl.skinWidth);
 
-        Vector3 centerStart = transform.position + Vector3.up * charControl.radius;
-
-        Debug.DrawRay(centerStart, Vector3.down * castDist, Color.blue);
         if (groundedOnSteps && Physics.Raycast(centerStart, Vector3.down, out hit, castDist, ~(1 << 8), QueryTriggerInteraction.Ignore))
         {
             float distance = transform.position.y - hit.point.y;
@@ -293,37 +296,38 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator MoveTo(Vector3 point, Quaternion rotation, float tRate = 1f, float rRate = 1f)
     {
-        anim.applyRootMotion = false;
+        bool originalRMVal = UseRootMotion;
 
-        velocity = Vector3.zero;
+        UseRootMotion = false;
+        StopMoving();
 
         float distance = Vector3.Distance(transform.position, point);
         float difference = Quaternion.Angle(transform.rotation, rotation);
         Vector3 direction = (point - transform.position).normalized;
-        bool isNotOk = true;
+        bool notInPosition = true;
 
         isMovingAuto = true;
         anim.SetBool("isWaiting", true);
 
-        while (isNotOk)
+        while (notInPosition)
         {
-            isNotOk = false;
+            notInPosition = false;
 
             if (Mathf.Abs(distance) > 0.05f)
             {
-                isNotOk = true;
-                transform.position = Vector3.Lerp(transform.position, point, tRate * Time.deltaTime);
+                notInPosition = true;
+                transform.position = Vector3.MoveTowards(transform.position, point, tRate * Time.deltaTime);
                 distance = Vector3.Distance(transform.position, point);
             }
             else
             {
-                velocity = Vector3.zero;
+                StopMoving();
             }
 
             if (Mathf.Abs(difference) > 5f)
             {
-                isNotOk = true;
-                transform.rotation = Quaternion.Slerp(transform.rotation, rotation, rRate * Time.deltaTime);
+                notInPosition = true;
+                transform.rotation = Quaternion.Lerp(transform.rotation, rotation, rRate * Time.deltaTime);
                 difference = Quaternion.Angle(transform.rotation, rotation);
             }
 
@@ -332,7 +336,8 @@ public class PlayerController : MonoBehaviour
 
         transform.position = point;
         transform.rotation = rotation;
-        StopMoving();
+
+        UseRootMotion = originalRMVal;
 
         isMovingAuto = false;
         anim.SetBool("isWaiting", false);
@@ -349,11 +354,7 @@ public class PlayerController : MonoBehaviour
 
     private Vector3 VelocityToLocal(Vector3 vel)
     {
-        Vector3 camForward = cam.forward;
-        camForward.y = 0f;
-        camForward.Normalize();
-
-        return Quaternion.FromToRotation(camForward, transform.forward) * vel;
+        return cam.InverseTransformVector(vel);
     }
 
     private Vector3 VelocityToGlobal(Vector3 vel)
@@ -389,6 +390,7 @@ public class PlayerController : MonoBehaviour
             StopMoving();
 
         velocity += Vector3.Scale(vel, new Vector3(1f, 0f, 1f));
+        localVelocity = VelocityToLocal(velocity);
         verticalSpeed += vel.y;
     }
 
@@ -416,7 +418,7 @@ public class PlayerController : MonoBehaviour
         anim.SetFloat("TargetSpeed", targetSpeed);
 
         // Allows Lara to smoothly take off
-        if (localVelocity == Vector3.zero && targetVector.magnitude > 0.1f)
+        if (localVelocity.sqrMagnitude == 0f && targetVector.magnitude > 0.1f)
         {
             Vector3 camForward = cam.forward;
             camForward.y = 0f;
@@ -764,6 +766,21 @@ public class PlayerController : MonoBehaviour
     public float DeathVelocity
     {
         get { return deathVelocity; }
+    }
+
+    public float BreathLossRate
+    {
+        get { return breathLossRate; }
+    }
+
+    public float BreathRecoveryRate
+    {
+        get { return breathRecoveryRate; }
+    }
+
+    public float WaterDeathSpeed
+    {
+        get { return underwaterDeathSpeed; }
     }
 
     public float TargetAngle

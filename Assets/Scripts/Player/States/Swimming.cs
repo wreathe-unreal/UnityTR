@@ -13,28 +13,37 @@ public class Swimming : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
-        player.CamControl.LAUTurning = true;
-        player.Anim.SetBool("isSwimming", true);
-        player.UseRootMotion = false;
-        player.UseGravity = false;
         isEntering = true;
         isClimbingUp = false;
-        player.CamControl.PivotOnTarget();
-        player.Velocity = new Vector3(0f, Mathf.Max(player.VerticalSpeed, -10f), 0f);
-        decelRate = 10f;
+
+        player.UseRootMotion = false;
+        player.UseGravity = false;
+
+        player.Anim.SetBool("isSwimming", true);
         player.Anim.SetFloat("Speed", 0f);
+
+        player.CamControl.LAUTurning = true;
+        player.CamControl.PivotOnTarget();
+
+        player.Velocity = new Vector3(0f, Mathf.Max(player.VerticalSpeed, -10f), 0f);
+
+        player.Stats.TryShowCanvas();
+
+        decelRate = 10f;
     }
 
     public override void OnExit(PlayerController player)
     {
-        player.CamControl.LAUTurning = false;
-        player.Anim.SetBool("isSwimming", false);
         player.UseRootMotion = true;
         player.UseGravity = true;
-        isEntering = false;
-        isTreading = false;
+        
+        player.Anim.SetBool("isSwimming", false);
         player.Anim.SetBool("isTreading", false);
+
         player.CamControl.PivotOnPivot();
+        player.CamControl.LAUTurning = false;
+
+        player.Stats.TryHideCanvas();
     }
 
     public override void Update(PlayerController player)
@@ -71,6 +80,15 @@ public class Swimming : StateBase<PlayerController>
 
         if (!isTreading)
         {
+            // Lose breath
+            player.Stats.Breath -= player.BreathLossRate * Time.deltaTime;
+
+            // Deplete health when out of breath
+            if (player.Stats.Breath == 0f)
+            {
+                player.Stats.Health -= (int)Mathf.Clamp(player.WaterDeathSpeed * Time.deltaTime, 1f, Mathf.Infinity);
+            }
+
             player.MoveFree(player.SwimSpeed);
 
             player.RotateToVelocity();
@@ -79,6 +97,9 @@ public class Swimming : StateBase<PlayerController>
         }
         else
         {
+            // Recover breath
+            player.Stats.Breath += player.WaterDeathSpeed * Time.deltaTime;
+
             CorrectTreadPosition(player);
 
             player.MoveGrounded(player.TreadSpeed);

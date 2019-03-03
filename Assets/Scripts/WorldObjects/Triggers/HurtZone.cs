@@ -14,7 +14,6 @@ public class HurtZone : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             stats = other.gameObject.GetComponent<PlayerStats>();
-            stats.ShowCanvas();
         }
     }
 
@@ -30,7 +29,7 @@ public class HurtZone : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            stats.HideCanvas();
+            
         }
     }
 }

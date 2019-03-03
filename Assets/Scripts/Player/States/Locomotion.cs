@@ -64,7 +64,7 @@ public class Locomotion : StateBase<PlayerController>
                     - ledgeInfo.Direction * player.HangForwardOffset
                     - Vector3.up * player.HangUpOffset;
                 player.Anim.ResetTrigger("ToLedgeForward");
-                player.LocalVelocity = Vector3.zero;
+                player.StopMoving();
                 player.StateMachine.GoToState<Climbing>();
             }
             else if (animState.IsName("LedgeOffFront") || animState.IsName("LastChanceGrab"))
@@ -82,18 +82,8 @@ public class Locomotion : StateBase<PlayerController>
 
         if (!player.Grounded && !isRootMotion)
         {
-            // Check if there is a ledge to grab as a last chance
-            if (ledgeDetector.FindHangableLedge(player.transform.position, -player.transform.forward, 0.5f, 1f, out ledgeInfo, player))
-            {
-                player.DisableCharControl();
-                player.Anim.SetTrigger("LastChance");
-                isTransitioning = true;
-            }
-            else
-            {
-                player.ResetVerticalSpeed();
-                player.StateMachine.GoToState<InAir>();
-            }
+            player.ResetVerticalSpeed();  // Stops player zooming off a ledge
+            player.StateMachine.GoToState<InAir>();
             return;
         }
         else if (player.Ground.Tag == "Slope" && !isRootMotion)
@@ -115,6 +105,7 @@ public class Locomotion : StateBase<PlayerController>
         if (isStairs = (player.Ground.Distance < 1f && player.Ground.Tag == "Stairs"))
         {
             player.Anim.SetBool("isStairs", true);
+
             RaycastHit hit;
             if (Physics.Raycast(player.transform.position + player.transform.forward * 0.2f + 0.2f * Vector3.up,
                 Vector3.down, out hit, 1f))
@@ -140,14 +131,13 @@ public class Locomotion : StateBase<PlayerController>
 
         if (Input.GetKeyDown(player.Inputf.crouch))
         {
-            Vector3 start = player.transform.position
-                + player.transform.forward * .75f
-                + Vector3.down * 0.1f;
-            if (ledgeDetector.FindHangableLedge(start, -player.transform.forward, .75f, 0.2f, out ledgeInfo, player))
+            Vector3 start = player.transform.position + player.transform.forward * 0.75f + Vector3.down * 0.1f;
+
+            if (ledgeDetector.FindHangableLedge(start, -player.transform.forward, 0.75f, 0.2f, out ledgeInfo, player))
             {
                 isTransitioning = true;
                 player.Anim.SetTrigger("ToLedgeForward");
-                player.Anim.applyRootMotion = true;
+                player.UseRootMotion = true;
                 player.DisableCharControl();
             }
             else
@@ -170,7 +160,7 @@ public class Locomotion : StateBase<PlayerController>
 
     private void LookForStepLedges(PlayerController player)
     {
-        if (Input.GetButtonDown("Jump") && !isRootMotion)
+        if (Input.GetKeyDown(player.Inputf.jump) && !isRootMotion)
         {
             isRootMotion = ledgeDetector.FindPlatformInfront(player.transform.position,
                 player.transform.forward, 2f, out ledgeInfo);
@@ -179,19 +169,17 @@ public class Locomotion : StateBase<PlayerController>
             {
                 float height = ledgeInfo.Point.y - player.transform.position.y;
 
-                // step can be runned over
+                // Step can be runned over
                 if (height < player.CharControl.stepOffset)
                 {
                     isRootMotion = false;
                     return;
                 } 
-                else
-                {
-                    player.transform.rotation = Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up);
-                    player.DisableCharControl(); // stops char controller collisions
-                }
 
-                if (height <= 0.9f)
+                player.DisableCharControl();  // Stops char controller collisions
+                player.UseRootMotion = false;
+
+                if (height <= 1.1f)
                     player.Anim.SetTrigger("StepUpQtr");
                 else if (height <= 1.5f)
                     player.Anim.SetTrigger("StepUpHlf");
@@ -213,20 +201,20 @@ public class Locomotion : StateBase<PlayerController>
             player.EnableCharControl();
             isRootMotion = false;
         }
-        else if (waitingBool && (animState.IsName("StepUp_Hlf") || animState.IsName("StepUp_Qtr")
-            || animState.IsName("StepUp_Full") || animState.IsName("RunStepUp_Qtr") || animState.IsName("RunStepUp_QtrM")))
+        else if (waitingBool && (animState.IsName("StepUp_Hlf") || animState.IsName("StepUp_Qtr") || animState.IsName("StepUp_Full")))
         {
             waitingBool = false;
-            player.Anim.applyRootMotion = true;
+            player.UseRootMotion = true;
 
-            Vector3 targetPos = ledgeInfo.Point + ledgeInfo.Direction * 0.24f;
-            player.Anim.MatchTarget(targetPos, Quaternion.LookRotation(ledgeInfo.Direction), AvatarTarget.Root,
-                new MatchTargetWeightMask(Vector3.one, 1f), 0.1f, 0.9f);
+            Vector3 targetPosition = ledgeInfo.Point + ledgeInfo.Direction * 0.24f;
+            Quaternion targetRotation = Quaternion.LookRotation(ledgeInfo.Direction);
+            MatchTargetWeightMask weightMask = new MatchTargetWeightMask(Vector3.one, 1f);
+
+            player.Anim.MatchTarget(targetPosition, targetRotation, AvatarTarget.Root, weightMask, 0.1f, 0.9f);
         }
-        else if (transInfo.IsName("AnyState -> StepUp_Hlf") || transInfo.IsName("AnyState -> StepUp_Qtr")
-            || transInfo.IsName("AnyState -> StepUp_Full"))
+        else if (transInfo.IsName("AnyState -> StepUp_Hlf") || transInfo.IsName("AnyState -> StepUp_Qtr") || transInfo.IsName("AnyState -> StepUp_Full"))
         {
-            player.Anim.applyRootMotion = false;
+            player.UseRootMotion = false;
         }
     }
 }

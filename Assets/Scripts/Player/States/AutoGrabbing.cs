@@ -7,8 +7,7 @@ public class AutoGrabbing : StateBase<PlayerController>
     private float timeTracker = 0f;
     private float grabTime = 0f;
 
-    private Vector3 initialColliderPos;
-    private Vector3 grabPoint;
+    private Vector3 grabPoint;  // Point lara will be at when she does the grab anim
     private Vector3 startPosition;
     private Quaternion targetRot;
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
@@ -39,6 +38,7 @@ public class AutoGrabbing : StateBase<PlayerController>
 
         player.Anim.SetBool("isAutoGrabbing", true);
 
+        // Get Lara to look at ledges she is grabbing
         player.ForceHeadLook = true;
         player.HeadLookAt = ledgeInfo.Point;
 
@@ -80,21 +80,6 @@ public class AutoGrabbing : StateBase<PlayerController>
         // Apply the correct velocity calculated
         player.ImpulseVelocity(velocityAdjusted);
 
-        Debug.Log("Setting vel: " + velocityAdjusted);
-
-        if (ledgeInfo.Collider != null)
-        {
-            initialColliderPos = ledgeInfo.Collider.transform.position;
-
-            MovingPlatform moving = ledgeInfo.Collider.GetComponent<MovingPlatform>();
-
-            if (moving != null)
-            {
-                // So Player aligns with ledge
-                moving.AttachTransform(player.transform);
-            }
-        }
-
         timeTracker = Time.time;
     }
 
@@ -110,34 +95,16 @@ public class AutoGrabbing : StateBase<PlayerController>
 
     public override void Update(PlayerController player)
     {
-        if (player.Grounded)
-        {
-            Debug.Log("Unfortunately grounded my love");
-            player.StateMachine.GoToState<Locomotion>();
-            return;
-        }
-
         if (Time.time - timeTracker >= grabTime)
         {
-            // adjust to align with moving ledge
-            if (ledgeInfo.Collider != null)
-            {
-                Vector3 change = ledgeInfo.Collider.transform.position - initialColliderPos;
-                grabPoint += change;
-            }
-
-            if (ledgeInfo.Type != LedgeType.HorPole)
-            {
-                if (UMath.GetHorizontalMag(player.Velocity) > 2f && HasFeetRoom())
-                    player.Anim.SetTrigger("DeepGrab");
-                if (UMath.GetHorizontalMag(player.Velocity) > 0.2f)
-                    player.Anim.SetTrigger("Grab");
-                else
-                    player.Anim.SetTrigger("StandGrab");
-            }
+            if (ledgeInfo.Type == LedgeType.Monkey || (UMath.GetHorizontalMag(player.Velocity) > 2f && HasFeetRoom()))
+                player.Anim.SetTrigger("DeepGrab");
+            if (UMath.GetHorizontalMag(player.Velocity) > 0.2f)
+                player.Anim.SetTrigger("Grab");
+            else
+                player.Anim.SetTrigger("StandGrab");
 
             player.transform.position = grabPoint;
-            player.transform.rotation = targetRot;
 
             if (ledgeInfo.Type == LedgeType.Free)
                 player.StateMachine.GoToState<Freeclimb>();
@@ -153,7 +120,7 @@ public class AutoGrabbing : StateBase<PlayerController>
         if (Physics.Raycast(grabPoint, ledgeInfo.Direction, 1f))
             return false;
 
-        if (Physics.Raycast(grabPoint + Vector3.up * 1f, ledgeInfo.Direction, 1f))
+        if (Physics.Raycast(grabPoint + Vector3.up * 1.25f, ledgeInfo.Direction, 1f))
             return false;
 
         return true;

@@ -4,20 +4,19 @@ using UnityEngine;
 
 public class Climbing : StateBase<PlayerController>
 {
-    private bool ledgeLeft;
-    private bool ledgeInnerLeft;
-    private bool ledgeRight;
-    private bool ledgeInnerRight;
+    private const float HANDSTAND_HOLD_TIME = 0.6f;
+
     private bool isOutCornering = false;
     private bool isInCornering = false;
     private bool isClimbingUp = false;
-    private bool isFeetRoom = false;
     private float right = 0f;
+    private float jumpHeldFor = 0f;
 
     private Vector3 cornerTargetPosition = Vector3.zero;
     private Quaternion cornerTargetRotation = Quaternion.identity;
 
     private LedgeDetector ledgeDetector = LedgeDetector.Instance;
+    private LedgeInfo ledgeInfo;
 
     public override void OnEnter(PlayerController player)
     {
@@ -89,32 +88,31 @@ public class Climbing : StateBase<PlayerController>
             return;
         }
 
-        // Adjustment for moving platforms
-        RaycastHit hit;
-        if (Physics.Raycast(player.transform.position + Vector3.up * (player.HangUpOffset - 0.1f), player.transform.forward, out hit, 1f, ~(1 << 8), QueryTriggerInteraction.Ignore))
-        {
-            if (hit.collider.CompareTag("MovingPlatform"))
-            {
-                MovingPlatform moving = hit.collider.GetComponent<MovingPlatform>();
-
-                moving.AttachTransform(player.transform);
-            }
-        }
+        AdjustPosition(player);
 
         if (right != 0f)
             LookForCorners(player);
-
-        AdjustPosition(player);
 
         player.Anim.SetFloat("Right", right);
 
         player.Anim.SetBool("isOutCorner", isOutCornering);
         player.Anim.SetBool("isInCorner", isInCornering);
 
-        if (Input.GetKey(player.Inputf.jump) && animState.IsName("HangLoop"))
+        // Test for climbing up key hold times
+        if (animState.IsName("HangLoop"))
         {
-            if (ledgeDetector.CanClimbUp(player.transform.position, player.transform.forward))
-                ClimbUp(player);
+            if (Input.GetKey(player.Inputf.jump) && jumpHeldFor < HANDSTAND_HOLD_TIME)
+            {
+                jumpHeldFor += Time.deltaTime;
+            }
+            else if (Input.GetKeyUp(player.Inputf.jump) || jumpHeldFor >= HANDSTAND_HOLD_TIME)
+            {
+                Vector3 tryClimbTo = ledgeInfo.Point + player.transform.forward * player.CharControl.radius;
+                if (UMath.CanFitInSpace(tryClimbTo, player.CharControl.height, player.CharControl.radius))
+                {
+                    ClimbUp(player);
+                }
+            }
         }
     }
 
@@ -122,7 +120,9 @@ public class Climbing : StateBase<PlayerController>
     {
         float horDir = Mathf.Sign(right);
 
-        BlockType blockType = IsBlocked(player, horDir * player.transform.right, 0.34f);
+        Vector3 ledgeRight = -Vector3.Cross(ledgeInfo.UpNormal, -ledgeInfo.Direction);
+
+        BlockType blockType = IsBlocked(player, horDir * ledgeRight, 0.34f);
 
         if (blockType == BlockType.Inner)
         {
@@ -243,20 +243,20 @@ public class Climbing : StateBase<PlayerController>
         player.Anim.SetFloat("Speed", 0f);
         player.Anim.SetFloat("TargetSpeed", 0f);
 
-        if (Input.GetButton("Sprint"))
+        if (jumpHeldFor >= HANDSTAND_HOLD_TIME)
             player.Anim.SetTrigger("Handstand");
         else
             player.Anim.SetTrigger("ClimbUp");
 
         isClimbingUp = true;
+
+        jumpHeldFor = 0f; // Reset for next time player climbs
     }
 
     private void LetGo(PlayerController player)
     {
         player.MaximizeCollider();
 
-        // Detaches from moving platforms
-        player.transform.parent = null;  
         // Stops player getting caught in wall
         player.transform.position = player.transform.position - player.transform.forward * player.CharControl.radius;
 
@@ -267,22 +267,20 @@ public class Climbing : StateBase<PlayerController>
 
     private void AdjustPosition(PlayerController player)
     {
-        AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
-
         Vector3 start = player.transform.position + Vector3.up * (player.HangUpOffset - ledgeDetector.MinDepth);
 
-        LedgeInfo ledgeInfo;
         if (ledgeDetector.FindLedgeAtPoint(start, player.transform.forward, 0.5f, 0.2f, out ledgeInfo))
         {
+            // Rotation adjustments
             Quaternion targetRot = Quaternion.Euler(0f, Quaternion.LookRotation(ledgeInfo.Direction, Vector3.up).eulerAngles.y, 0f);
 
-            player.transform.rotation = Quaternion.Slerp(player.transform.rotation,
-                targetRot, 10f * Time.deltaTime);
+            player.transform.rotation = Quaternion.Slerp(player.transform.rotation, targetRot, 20f * Time.deltaTime);
 
+            // Position adjustments
             Vector3 newPosition = ledgeInfo.Point - (player.transform.forward * player.HangForwardOffset);
-            newPosition.y = animState.IsName("HangLoop") ? ledgeInfo.Point.y - player.HangUpOffset : player.transform.position.y;
+            newPosition.y = ledgeInfo.Point.y - player.HangUpOffset;
 
-            player.transform.position = newPosition;
+            player.transform.position = Vector3.Lerp(player.transform.position, newPosition, Time.deltaTime * 50f);
         }
     }
 }

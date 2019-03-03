@@ -15,6 +15,9 @@ public class Dead : StateBase<PlayerController>
         if (player.Velocity.y < -14f)
             timeToWait = 0.12f;
 
+        if (player.StateMachine.LastStateWas<Swimming>())
+            player.Anim.SetTrigger("SwimDeath");
+
         player.Anim.SetBool("isDead", true);
         player.Anim.applyRootMotion = true;
         player.DisableCharControl();

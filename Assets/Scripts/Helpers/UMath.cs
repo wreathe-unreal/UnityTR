@@ -15,6 +15,35 @@ public static class UMath
         return Vector3.Scale(vector, new Vector3(1f, 0f, 1f));
     }
 
+    public static Vector3 MakeXYZPositive(Vector3 vector)
+    {
+        return new Vector3(Mathf.Abs(vector.x), Mathf.Abs(vector.y), Mathf.Abs(vector.z));
+    }
+
+    public static bool CanFitInSpace(Vector3 bottom, float height, float radius, int layerMask = ~(1 << 8))
+    {
+        // Check height wise
+        if (Physics.Raycast(bottom, Vector3.up, height, layerMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        // Check each side using radius
+        Vector3 halfWayUp = bottom + (Vector3.up * height / 2f);
+
+        if (Physics.Raycast(halfWayUp, Vector3.forward, radius, layerMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        if (Physics.Raycast(halfWayUp, Vector3.back, radius, layerMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        if (Physics.Raycast(halfWayUp, Vector3.right, radius, layerMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        if (Physics.Raycast(halfWayUp, Vector3.left, radius, layerMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        return true;
+    }
+
     public static Vector3 VelocityToReachPoint(Vector3 start, Vector3 end, float gravity, float time)
     {
         Vector3 relative = end - start;
@@ -64,8 +93,8 @@ public static class UMath
         min = Mathf.Repeat(min, 360);
         max = Mathf.Repeat(max, 360);
         bool inverse = false;
-        var tmin = min;
-        var tangle = angle;
+        float tmin = min;
+        float tangle = angle;
         if (min > 180)
         {
             inverse = !inverse;

@@ -54,6 +54,7 @@ public class Jumping : StateBase<PlayerController>
 
         // Used to determine if forward or up stand jump
         float targetSpeed = UMath.GetHorizontalMag(player.RawTargetVector());
+
         player.Anim.SetFloat("TargetSpeed", targetSpeed);
 
         bool isDive = player.Anim.GetBool("isDive");
@@ -89,11 +90,16 @@ public class Jumping : StateBase<PlayerController>
                 : 0.1f;
             float yVel = player.JumpYVel;
 
-            // Snaps stand forward jump to right direction (more responsive)
+            // Snaps forward standing jumps to right direction (more responsive)
             if (isStandJump && !noRotate)
             {
-                Quaternion rotationTarget = Quaternion.LookRotation(player.RawTargetVector(1f, true), Vector3.up);
-                player.transform.rotation = rotationTarget;
+                Vector3 targetJumpDir = player.RawTargetVector(1f, true);
+
+                if (targetJumpDir.sqrMagnitude != 0f)  // Stops Lara snapping to (0,0,1)
+                {
+                    Quaternion rotationTarget = Quaternion.LookRotation(targetJumpDir, Vector3.up);
+                    player.transform.rotation = rotationTarget;
+                }
             }
 
             // Checks for ledges
@@ -142,13 +148,12 @@ public class Jumping : StateBase<PlayerController>
         }
     }
 
-    private bool TryReachLedge(PlayerController player, float zVel, ref float yVel, bool canClear = true)
+    private bool TryReachLedge(PlayerController player, float zVel, ref float yVel, bool allowClearingBoost = true)
     {
         // Doing standing jump, allow player to grab if close
         if (zVel < 0.5f)
         {
-            player.StateMachine.GoToState<AutoGrabbing>(ledgeInfo);
-            return true;
+            zVel = 0.5f;
         }
         
         // Need to check where player will be relative to ledge
@@ -164,7 +169,7 @@ public class Jumping : StateBase<PlayerController>
             player.StateMachine.GoToState<AutoGrabbing>(ledgeInfo);
             return true;
         }
-        else if (canClear && vertPos < relative.y && vertPos > relative.y - 0.8f) // she hits it around the hip just adjust up velocity to clear it
+        else if (allowClearingBoost && vertPos < relative.y && vertPos > relative.y - 0.8f) // she hits it around the hip just adjust up velocity to clear it
         {
             float time;
             Vector3 adjustedVel = UMath.VelocityToReachPoint(player.transform.position,

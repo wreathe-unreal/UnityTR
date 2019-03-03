@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class InAir : StateBase<PlayerController>
 {
-    private bool screamed = false;
+    private bool hasScreamed = false;
 
     private Vector3 lastPos = Vector3.zero;
     private Vector3 grabPoint = Vector3.zero;
@@ -13,13 +13,13 @@ public class InAir : StateBase<PlayerController>
 
     public override void OnEnter(PlayerController player)
     {
+        hasScreamed = false;
+
         player.CamControl.State = CameraState.Grounded;
 
         player.UseGravity = true;
         player.UseRootMotion = false;
         player.GroundedOnSteps = false;
-
-        screamed = false;
 
         player.Anim.SetBool("isAir", true);
     }
@@ -35,32 +35,37 @@ public class InAir : StateBase<PlayerController>
     public override void Update(PlayerController player)
     {
         // Handle Lara screaming
-        if (player.VerticalSpeed <= -player.DeathVelocity && !screamed)
+        if (player.VerticalSpeed <= -player.DeathVelocity && !hasScreamed)
         {
             player.SFX.PlayScreamSound();
-            screamed = true;
+            hasScreamed = true;
         }
 
         AnimatorStateInfo animState = player.Anim.GetCurrentAnimatorStateInfo(0);
 
-        player.Anim.SetFloat("YSpeed", player.VerticalSpeed);
-
         float targetSpeed = UMath.GetHorizontalMag(player.RawTargetVector());
-        player.Anim.SetFloat("TargetSpeed", targetSpeed);
+
+        player.Anim.SetFloat("YSpeed", player.VerticalSpeed);
+        player.Anim.SetFloat("TargetSpeed", targetSpeed);  // Useful for transitioning to other movements
 
         if (player.Grounded)
         {
+            // Causes recalculation of local velocity
+            player.Velocity = player.Velocity;
+
             // Apply damage if necessary
             if (player.VelocityLastFrame.y < -player.DamageVelocity)
             {
                 int healthToLose = (int)((Mathf.Abs(player.VelocityLastFrame.y) - player.DamageVelocity) * 100f / (player.DeathVelocity - player.DamageVelocity));
                 player.Stats.Health -= healthToLose;
 
+                // Stops any screaming currently happening
                 player.GetComponent<AudioSource>().Stop();
 
                 if (player.Stats.Health == 0)
                 {
                     player.SFX.PlayHitGroundSound();
+                    return;  // Player transitioning into death so ignore rest
                 }
             }
 
@@ -78,16 +83,14 @@ public class InAir : StateBase<PlayerController>
             player.Anim.SetTrigger(landType);
 
             // Stops player moving forward on landing
-            if (player.RawTargetVector().magnitude < 0.1f)
+            if (targetSpeed < 0.1f)
                 player.ImpulseVelocity(Vector3.down * player.Gravity);
 
-            // Don't want player to come out of death state
-            if (player.Stats.IsAlive())
-                player.StateMachine.GoToState<Locomotion>();
+            player.StateMachine.GoToState<Locomotion>();
 
             return;
         }
-        else if (!player.Anim.GetBool("isDive"))
+        else if (!player.Anim.GetBool("isDive"))  // Other actions that be performed while not diving
         { 
             if (Input.GetKeyDown(player.Inputf.action) && !player.UpperStateMachine.IsInState<UpperCombat>())
             {

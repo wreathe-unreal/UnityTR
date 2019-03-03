@@ -38,7 +38,7 @@ public class RagdollController : MonoBehaviour
 
     public void DisableRagdoll()
     {
-        GetComponent<Animator>().enabled = true;
+        player.Anim.enabled = true;
 
         foreach (Rigidbody rb in rigidBodies)
         {
@@ -50,8 +50,13 @@ public class RagdollController : MonoBehaviour
 
     public void EnableRagdoll()
     {
-        GetComponent<Animator>().enabled = false;
-        player.CamControl.Target = rigidBodies[0].transform;
+        // Don't want player to fall to bottom of pool
+        if (player.StateMachine.LastStateWas<Swimming>())
+            return;
+
+        player.Anim.enabled = false;
+
+        player.CamControl.Target = rigidBodies[0].transform;  // Have cam follow body not stopped capsule
 
         foreach (Rigidbody rb in rigidBodies)
         {

@@ -6,26 +6,40 @@ using UnityEngine;
 public class PlayerFootIK : MonoBehaviour
 {
     [SerializeField]
-    float footOffset = 0.1f;
+    private float footOffset = 0.1f;
 
-    PlayerController player;
+    private bool useIK = true;
 
-    Animator anim;
+    private PlayerController player;
+    private Animator anim;
+    private Vector3 rFootPosition;
+    private Vector3 lFootPosition;
+    private Quaternion rFootRotation;
+    private Quaternion lFootRotation;
 
-    Vector3 rFootPosition;
-    Vector3 lFootPosition;
-
-    Quaternion rFootRotation;
-    Quaternion lFootRotation;
-
-    void Start()
+    private void Start()
     {
         player = GetComponent<PlayerController>();
         anim = GetComponent<Animator>();
+
+        player.Stats.OnDeath += DisableIK;
     }
 
-    void OnAnimatorIK(int layerIndex)
+    private void OnDisable()
     {
+        player.Stats.OnDeath -= DisableIK;
+    }
+
+    private void DisableIK()
+    {
+        useIK = false;
+    }
+
+    private void OnAnimatorIK(int layerIndex)
+    {
+        if (!useIK)
+            return;
+
         float leftWeight = anim.GetFloat("LeftFoot");
         float rightWeight = anim.GetFloat("RightFoot");
 
@@ -36,7 +50,7 @@ public class PlayerFootIK : MonoBehaviour
         SetFootPosition(AvatarIKGoal.RightFoot, rightWeight, rFootPosition, rFootRotation);
     }
 
-    void CorrectFootPosition(HumanBodyBones foot, ref Vector3 position, ref Quaternion rotation)
+    private void CorrectFootPosition(HumanBodyBones foot, ref Vector3 position, ref Quaternion rotation)
     {
         Transform footT = anim.GetBoneTransform(foot);
 
@@ -48,7 +62,7 @@ public class PlayerFootIK : MonoBehaviour
         }
     }
 
-    void SetFootPosition(AvatarIKGoal IKGoal, float weight, Vector3 position, Quaternion rotation)
+    private void SetFootPosition(AvatarIKGoal IKGoal, float weight, Vector3 position, Quaternion rotation)
     {
         anim.SetIKPosition(IKGoal, position + Vector3.up * footOffset);
         anim.SetIKPositionWeight(IKGoal, weight);

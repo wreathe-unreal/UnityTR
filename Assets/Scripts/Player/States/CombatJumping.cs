@@ -20,6 +20,13 @@ public class CombatJumping : StateBase<PlayerController>
         camForward.Normalize();
 
         Vector3 targetDirection = player.RawTargetVector(1f, true);
+
+        if (targetDirection.sqrMagnitude < 0.1f)
+        {
+            player.Anim.SetTrigger("JumpUp");
+            return;
+        }
+
         float jumpDirection = Vector3.SignedAngle(camForward, targetDirection, Vector3.up);
 
         if (Mathf.Abs(jumpDirection) < 45f)
@@ -93,6 +100,11 @@ public class CombatJumping : StateBase<PlayerController>
             else if (transInfo.IsName("CombatCompress -> JumpF"))
             {
                 player.ImpulseVelocity(player.transform.forward * player.RunJumpVel + Vector3.up * player.JumpYVel);
+                hasJumped = true;
+            }
+            else if (transInfo.IsName("CombatCompress -> JumpU"))
+            {
+                player.ImpulseVelocity(Vector3.up * player.JumpYVel);
                 hasJumped = true;
             }
             

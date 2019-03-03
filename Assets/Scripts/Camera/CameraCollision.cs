@@ -37,11 +37,11 @@ public class CameraCollision : MonoBehaviour
             if (hit.transform.tag != "Player" && hit.transform.tag != "MainCamera")
             {
                 float pointOffset = (hit.point - pivot.position).magnitude;
-                cam.localPosition = Vector3.Slerp(cam.localPosition, cam.localPosition.normalized * pointOffset, Time.deltaTime * zoomSpeed);
+                cam.localPosition = Vector3.Lerp(cam.localPosition, cam.localPosition.normalized * pointOffset, Time.deltaTime * zoomSpeed);
                 return;
             }
         }
 
-        cam.localPosition = Vector3.Slerp(cam.localPosition, cam.localPosition.normalized * initDist, Time.deltaTime * retreatSpeed);
+        cam.localPosition = Vector3.Lerp(cam.localPosition, cam.localPosition.normalized * initDist, Time.deltaTime * retreatSpeed);
     }
 }
