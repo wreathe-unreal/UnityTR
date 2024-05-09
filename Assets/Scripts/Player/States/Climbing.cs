@@ -243,9 +243,9 @@ public class Climbing : StateBase<PlayerController>
         player.Anim.SetFloat("Speed", 0f);
         player.Anim.SetFloat("TargetSpeed", 0f);
 
-        if (jumpHeldFor >= HANDSTAND_HOLD_TIME)
-            player.Anim.SetTrigger("Handstand");
-        else
+        // if (jumpHeldFor >= HANDSTAND_HOLD_TIME)
+        //     player.Anim.SetTrigger("Handstand");
+        // else
             player.Anim.SetTrigger("ClimbUp");
 
         isClimbingUp = true;
