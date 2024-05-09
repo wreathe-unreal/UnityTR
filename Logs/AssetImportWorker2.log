@@ -1,0 +1,390 @@
+Using pre-set license
+Built from '2022.3/staging' branch; Version is '2022.3.22f1 (887be4894c44) revision 8944612'; Using compiler version '192829333'; Build Type 'Release'
+OS: 'Windows 11  (10.0.22631) 64bit Core' Language: 'en' Physical Memory: 32652 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1, IsPro: 1
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\2022.3.22f1\Editor\Unity.exe
+-adb2
+-batchMode
+-noUpm
+-name
+AssetImportWorker2
+-projectPath
+C:/Users/ENA/Dropbox/school/Game Design/UnityRaider
+-logFile
+Logs/AssetImportWorker2.log
+-srvPort
+65467
+Successfully changed project path to: C:/Users/ENA/Dropbox/school/Game Design/UnityRaider
+C:/Users/ENA/Dropbox/school/Game Design/UnityRaider
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [49160] Host "[IP] 192.168.18.27 [Port] 0 [Flags] 2 [Guid] 971957925 [EditorId] 971957925 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-TUJ1V18) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" joined multi-casting on [225.0.0.222:54997]...
+
+Player connection [49160] Host "[IP] 192.168.18.27 [Port] 0 [Flags] 2 [Guid] 971957925 [EditorId] 971957925 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-TUJ1V18) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" joined alternative multi-casting on [225.0.0.222:34997]...
+
+[Physics::Module] Initialized MultithreadedJobDispatcher with 11 workers.
+Refreshing native plugins compatible for Editor in 12.40 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 2022.3.22f1 (887be4894c44)
+[Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/2022.3.22f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path C:/Users/ENA/Dropbox/school/Game Design/UnityRaider/Assets
+GfxDevice: creating device client; threaded=0; jobified=0
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 3060 (ID=0x2504)
+    Vendor:   NVIDIA
+    VRAM:     12129 MB
+    Driver:   31.0.15.4584
+Initialize mono
+Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/2022.3.22f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/2022.3.22f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Program Files/Unity/Hub/Editor/2022.3.22f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56824
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Program Files/Unity/Hub/Editor/2022.3.22f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+Register platform support module: C:/Program Files/Unity/Hub/Editor/2022.3.22f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.010547 seconds.
+- Loaded All Assemblies, in  0.445 seconds
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.348 seconds
+Domain Reload Profiling: 791ms
+	BeginReloadAssembly (140ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (1ms)
+	RebuildCommonClasses (44ms)
+	RebuildNativeTypeToScriptingClass (11ms)
+	initialDomainReloadingComplete (77ms)
+	LoadAllAssembliesAndSetupDomain (171ms)
+		LoadAssemblies (139ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (167ms)
+			TypeCache.Refresh (165ms)
+				TypeCache.ScanAssembly (149ms)
+			ScanForSourceGeneratedMonoScriptInfo (1ms)
+			ResolveRequiredComponents (0ms)
+	FinalizeReload (348ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (277ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (14ms)
+			SetLoadedEditorAssemblies (7ms)
+			RefreshPlugins (0ms)
+			BeforeProcessingInitializeOnLoad (2ms)
+			ProcessInitializeOnLoadAttributes (195ms)
+			ProcessInitializeOnLoadMethodAttributes (59ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+========================================================================
+Worker process is ready to serve import requests
+Begin MonoManager ReloadAssembly
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  0.716 seconds
+Refreshing native plugins compatible for Editor in 7.40 ms, found 2 plugins.
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Package Manager log level set to [2]
+[Package Manager] Server::EnsureServerProcessIsRunning -- launch failed, reason: Unity was launched with the -noUpm command-line argument
+[Package Manager] UpmClient::Send -- Unable to send message (not connected to UPM process).
+[Package Manager] Cannot connect to Unity Package Manager local server
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.725 seconds
+Domain Reload Profiling: 1438ms
+	BeginReloadAssembly (178ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (6ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (33ms)
+	RebuildCommonClasses (57ms)
+	RebuildNativeTypeToScriptingClass (13ms)
+	initialDomainReloadingComplete (47ms)
+	LoadAllAssembliesAndSetupDomain (418ms)
+		LoadAssemblies (386ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (132ms)
+			TypeCache.Refresh (106ms)
+				TypeCache.ScanAssembly (91ms)
+			ScanForSourceGeneratedMonoScriptInfo (20ms)
+			ResolveRequiredComponents (4ms)
+	FinalizeReload (725ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (563ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (8ms)
+			SetLoadedEditorAssemblies (5ms)
+			RefreshPlugins (0ms)
+			BeforeProcessingInitializeOnLoad (72ms)
+			ProcessInitializeOnLoadAttributes (303ms)
+			ProcessInitializeOnLoadMethodAttributes (169ms)
+			AfterProcessingInitializeOnLoad (6ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (9ms)
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.06 seconds
+Refreshing native plugins compatible for Editor in 7.10 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Unloading 2590 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 62 unused Assets / (69.7 KB). Loaded Objects now: 3035.
+Memory consumption went from 113.8 MB to 113.7 MB.
+Total: 6.754800 ms (FindLiveObjects: 0.364800 ms CreateObjectMapping: 0.067600 ms MarkObjects: 6.157900 ms  DeleteObjects: 0.162800 ms)
+
+AssetImportParameters requested are different than current active one (requested -> active):
+  custom:video-decoder-webm-vp8: 9c59270c3fd7afecdb556c50c9e8de78 -> 
+  custom:SearchIndexIgnoredProperties: e643bd26f0fe6173181afceb89e7c659 -> 
+  custom:container-demuxer-ogg: 62fdf1f143b41e24485cea50d1cbac27 -> 
+  custom:AudioImporter_EditorPlatform: d09bf68614088b80899f8185d706f6e7 -> 
+  custom:video-codec-MediaFoundation-h265: 746d11721c4dcdbdad8f713fa42b33f4 -> 
+  custom:video-decoder-ogg-theora: a1e56fd34408186e4bbccfd4996cb3dc -> 
+  custom:framework-win-MediaFoundation: 216162199b28c13a410421893ffa2e32 -> 
+  custom:video-encoder-webm-vp8: eb34c28f22e8b96e1ab97ce403110664 -> 
+  custom:audio-decoder-ogg-vorbis: bf7c407c2cedff20999df2af8eb42d56 -> 
+  custom:CustomObjectIndexerAttribute: 9a22284fe3817be447336de3de66b15e -> 
+  custom:container-demuxer-webm: 4f35f7cbe854078d1ac9338744f61a02 -> 
+  custom:audio-encoder-webm-vorbis: bf7c407c2cedff20999df2af8eb42d56 -> 
+  custom:container-muxer-webm: aa71ff27fc2769a1b78a27578f13a17b -> 
+========================================================================
+Received Import Request.
+  Time since last request: 961092.700984 seconds.
+  path: Assets/Animations/AOD Lara/LARA_BOX_WALKF_START.FBX
+  artifactKey: Guid(48e1f1ac2378b164d8b4946c5902dc8a) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_BOX_WALKF_START.FBX using Guid(48e1f1ac2378b164d8b4946c5902dc8a) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '89ee603df66f6111fb66734f8719749b') in 0.026277 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000013 seconds.
+  path: Assets/Animations/AOD Lara/LARA_BOX_HOLD.FBX
+  artifactKey: Guid(0c012f2faa6dca74aaa6cd1dd9679104) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_BOX_HOLD.FBX using Guid(0c012f2faa6dca74aaa6cd1dd9679104) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'ef7d2580e04d2e4ceb1ee12249ef75f5') in 0.003293 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000010 seconds.
+  path: Assets/Animations/AOD Lara/LARA_CRAWL_DEATH.FBX
+  artifactKey: Guid(4ed564161d1faa246aa0ce78d81a8ebd) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_CRAWL_DEATH.FBX using Guid(4ed564161d1faa246aa0ce78d81a8ebd) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '7210cea39d1f5263f519c9b3ce67f804') in 0.002812 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000011 seconds.
+  path: Assets/Animations/AOD Lara/LARA_ACRAWLPOSE_TO_CROUCH.FBX
+  artifactKey: Guid(be7c61b7e5c8a49449624c16692dd83a) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_ACRAWLPOSE_TO_CROUCH.FBX using Guid(be7c61b7e5c8a49449624c16692dd83a) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'e9c21391a6b78b49627c41b73cc9837f') in 0.002286 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000011 seconds.
+  path: Assets/Animations/AOD Lara/LARA_AIM_MACHINEGUN_LOOP.FBX
+  artifactKey: Guid(80ffe1e0eb7a3ab45a7b8b636cb0db03) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_AIM_MACHINEGUN_LOOP.FBX using Guid(80ffe1e0eb7a3ab45a7b8b636cb0db03) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '22424defc7d72810174f44f0b4b33610') in 0.002219 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000011 seconds.
+  path: Assets/Animations/AOD Lara/LARA_COMPRESS.FBX
+  artifactKey: Guid(f5293998f1a26b64abdfadc2825ec0cf) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_COMPRESS.FBX using Guid(f5293998f1a26b64abdfadc2825ec0cf) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'ed4e8009781c99b506269317bcdbff4a') in 0.002069 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000008 seconds.
+  path: Assets/Animations/AOD Lara/LARA_AIM_SHOTGUN_LOOP.FBX
+  artifactKey: Guid(97507a8a0d0dd9e41ab99d939811bc08) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_AIM_SHOTGUN_LOOP.FBX using Guid(97507a8a0d0dd9e41ab99d939811bc08) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '8afaca82902561f25eec2a7ca24e5501') in 0.002023 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000008 seconds.
+  path: Assets/Animations/AOD Lara/LARA_BIN_CLIMB_IN.FBX
+  artifactKey: Guid(1a06124b20a69de46984d1411e2c0287) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_BIN_CLIMB_IN.FBX using Guid(1a06124b20a69de46984d1411e2c0287) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'b23de31dd631fe316d1177ab0166466a') in 0.003505 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000011 seconds.
+  path: Assets/Animations/AOD Lara/LARA_COMPRESS_TO_JUMPL_MIRROR.FBX
+  artifactKey: Guid(16c840916a8ffcd42ae776add2c4dff4) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_COMPRESS_TO_JUMPL_MIRROR.FBX using Guid(16c840916a8ffcd42ae776add2c4dff4) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'cb88fd7b3a297482bbf6feac41ee7d91') in 0.002747 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000014 seconds.
+  path: Assets/Animations/AOD Lara/LARA_BIGHIT_FRONT.FBX
+  artifactKey: Guid(8bf366ea46a7e1643b9c763bcef55f0d) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_BIGHIT_FRONT.FBX using Guid(8bf366ea46a7e1643b9c763bcef55f0d) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '6a6b1e01c249bbd9f647e36abe26f054') in 0.002127 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000008 seconds.
+  path: Assets/Animations/AOD Lara/LARA_COOL_CLIMB.FBX
+  artifactKey: Guid(9edba0f7e7a770c4692d1c55a01a888c) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_COOL_CLIMB.FBX using Guid(9edba0f7e7a770c4692d1c55a01a888c) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '6b46e91025b0d0095b8a0047e3028b39') in 0.002882 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000011 seconds.
+  path: Assets/Animations/AOD Lara/LARA_BIN_LOOK.FBX
+  artifactKey: Guid(c444bf61155802b438b1d7d3b47d26ce) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_BIN_LOOK.FBX using Guid(c444bf61155802b438b1d7d3b47d26ce) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'c5ad301b87eff042b53cb7fb46b46909') in 0.002971 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000012 seconds.
+  path: Assets/Animations/AOD Lara/LARA_CABINET_TAKE.FBX
+  artifactKey: Guid(f74413c38d1f51f44a0fceb57559420c) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_CABINET_TAKE.FBX using Guid(f74413c38d1f51f44a0fceb57559420c) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'eb2f0fcbe0bd697d40509937a02e5ff2') in 0.002900 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000011 seconds.
+  path: Assets/Animations/AOD Lara/LARA_CRAWL_TURN45_MIRROR.FBX
+  artifactKey: Guid(86a14dd9b162dc44ba931a9b1754c3bf) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_CRAWL_TURN45_MIRROR.FBX using Guid(86a14dd9b162dc44ba931a9b1754c3bf) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '34378a3f745cf9ede40d8b8bc51ecdea') in 0.002961 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000013 seconds.
+  path: Assets/Animations/AOD Lara/LARA_CORNER_SPINBACK_MIRROR.FBX
+  artifactKey: Guid(f51f13d27b05ffc469f1bbf623af953b) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_CORNER_SPINBACK_MIRROR.FBX using Guid(f51f13d27b05ffc469f1bbf623af953b) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '54df40e18bbe1b6cbb41da98498fe725') in 0.002641 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000010 seconds.
+  path: Assets/Animations/AOD Lara/LARA_CLIMB_CORNER_INSIDE.FBX
+  artifactKey: Guid(3f9ec35df8add534f9599dd015758976) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_CLIMB_CORNER_INSIDE.FBX using Guid(3f9ec35df8add534f9599dd015758976) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'fa13c9f5d9d29b990d986573353118a1') in 0.003249 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000013 seconds.
+  path: Assets/Animations/AOD Lara/LARA_CABINET_OPEN.FBX
+  artifactKey: Guid(bca2ba025e9b2ff44a4005baa66ea880) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_CABINET_OPEN.FBX using Guid(bca2ba025e9b2ff44a4005baa66ea880) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '0c1ddec7307d52c0f6c36fe5929229d7') in 0.003429 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000015 seconds.
+  path: Assets/Animations/AOD Lara/LARA_BIGHIT_SIDE_MIRROR.FBX
+  artifactKey: Guid(03bc0c6b2a45b5f4d97957d8e21fdbe0) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_BIGHIT_SIDE_MIRROR.FBX using Guid(03bc0c6b2a45b5f4d97957d8e21fdbe0) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '7f00ecc63b2a8838458e2a1792f3fed0') in 0.003103 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000012 seconds.
+  path: Assets/Animations/AOD Lara/LARA_COMPRESS_TO_JUMPU.FBX
+  artifactKey: Guid(8f384dd48ccd1aa40adcc9a8c06970b6) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_COMPRESS_TO_JUMPU.FBX using Guid(8f384dd48ccd1aa40adcc9a8c06970b6) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '441efb4da6bd7657e5f9261dbc7ab8f4') in 0.003626 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000013 seconds.
+  path: Assets/Animations/AOD Lara/LARA_COMPRESS_TO_JUMPB.FBX
+  artifactKey: Guid(4d0f9e2f3920c984486cd3567c56b467) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_COMPRESS_TO_JUMPB.FBX using Guid(4d0f9e2f3920c984486cd3567c56b467) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'f453ed24db7175b715687616b05a192e') in 0.002798 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000017 seconds.
+  path: Assets/Animations/AOD Lara/LARA_CLIMB_CORNER_INSIDE_MIRROR.FBX
+  artifactKey: Guid(57d7c5f81b8fc304cb42c5f3ac36fe24) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_CLIMB_CORNER_INSIDE_MIRROR.FBX using Guid(57d7c5f81b8fc304cb42c5f3ac36fe24) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '7f26d80222861403528b62c6e4418004') in 0.002147 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000010 seconds.
+  path: Assets/Animations/AOD Lara/LARA_COMPRESS_TO_JUMPF.FBX
+  artifactKey: Guid(7ffb593e64ce3ca4993446e69f156834) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_COMPRESS_TO_JUMPF.FBX using Guid(7ffb593e64ce3ca4993446e69f156834) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'a592ce1613c3f2fe9605124fac32f45c') in 0.002027 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000009 seconds.
+  path: Assets/Animations/AOD Lara/LARA_BOX_ADJUST.FBX
+  artifactKey: Guid(be30d979ca6535d4c8421c66c658dbc6) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_BOX_ADJUST.FBX using Guid(be30d979ca6535d4c8421c66c658dbc6) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '81249684440fcb3b06df01ea4ecb6fe3') in 0.002040 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000010 seconds.
+  path: Assets/Animations/AOD Lara/LARA_AIM_MACHINEGUN.FBX
+  artifactKey: Guid(6f50c90956097d9498cd0ca601bec6fe) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_AIM_MACHINEGUN.FBX using Guid(6f50c90956097d9498cd0ca601bec6fe) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: '69504dab29a50e2502d37500cdd07452') in 0.002692 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+========================================================================
+Received Import Request.
+  Time since last request: 0.000012 seconds.
+  path: Assets/Animations/AOD Lara/LARA_CLIMB_CORNER_OUTSIDE_MIRROR.FBX
+  artifactKey: Guid(72f480f89d9036c4ab5c74363d5f7a5f) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/Animations/AOD Lara/LARA_CLIMB_CORNER_OUTSIDE_MIRROR.FBX using Guid(72f480f89d9036c4ab5c74363d5f7a5f) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'ec722c08ebde5bb8a0e032a12d4be81f') in 0.002972 seconds
+Number of updated asset objects reloaded before import = 0
+Number of asset objects unloaded after import = 129
+Editor requested this worker to shutdown with reason: Scaling down because of idle timeout
+TcpMessagingSession - receive error: operation aborted. errorcode: 995, details: The I/O operation has been aborted because of either a thread exit or an application request.
+AssetImportWorker is now disconnected from the server
+Process exiting
+Exiting without the bug reporter. Application will terminate with return code 0
